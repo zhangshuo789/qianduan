@@ -105,6 +105,19 @@
 
 **约束**：user_id + post_id 唯一
 
+#### File 文件表（已完成）
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| file_name | VARCHAR(255) | 原始文件名 |
+| stored_name | VARCHAR(255) | 存储文件名（UUID） |
+| file_path | VARCHAR(500) | 存储路径（相对路径） |
+| file_type | VARCHAR(50) | 文件类型（avatar/post_image） |
+| content_type | VARCHAR(100) | MIME类型 |
+| file_size | BIGINT | 文件大小（字节） |
+| user_id | BIGINT | 上传用户ID |
+| created_at | DATETIME | 创建时间 |
+
 ---
 
 ## 安全机制
@@ -140,6 +153,9 @@
 | DELETE /api/post/{id}/unfavorite | 登录 |
 | GET /api/post/{id}/favoriteStatus | 公开 |
 | GET /api/user/{id}/favorites | 公开 |
+| POST /api/file/upload | 登录 |
+| GET /api/file/{id} | 登录 |
+| GET /api/file/{id}/url | 登录 |
 
 ---
 
@@ -185,7 +201,8 @@
 src/main/java/com/volleyball/volleyballcommunitybackend/
 ├── VolleyballCommunityBackendApplication.java    # 启动类
 ├── config/
-│   └── SecurityConfig.java                     # Spring Security配置 + JWT过滤器
+│   ├── SecurityConfig.java                     # Spring Security配置 + JWT过滤器
+│   └── FileProperties.java                     # 文件服务配置
 ├── controller/
 │   ├── AuthController.java                     # 认证接口（注册/登录）
 │   ├── UserController.java                    # 用户接口（查询/更新）
@@ -193,21 +210,24 @@ src/main/java/com/volleyball/volleyballcommunitybackend/
 │   ├── PostController.java                    # 帖子接口（CRUD）
 │   ├── CommentController.java                 # 评论接口
 │   ├── LikeController.java                    # 点赞接口
-│   └── FavoriteController.java                # 收藏接口
+│   ├── FavoriteController.java                # 收藏接口
+│   └── FileController.java                    # 文件上传接口
 ├── entity/
 │   ├── User.java                              # 用户实体
 │   ├── Board.java                             # 板块实体
 │   ├── Post.java                              # 帖子实体
 │   ├── Comment.java                           # 评论实体
 │   ├── Like.java                              # 点赞实体
-│   └── Favorite.java                           # 收藏实体
+│   ├── Favorite.java                           # 收藏实体
+│   └── FileEntity.java                         # 文件实体
 ├── repository/
 │   ├── UserRepository.java                    # 用户数据访问
 │   ├── BoardRepository.java                    # 板块数据访问
 │   ├── PostRepository.java                     # 帖子数据访问
 │   ├── CommentRepository.java                  # 评论数据访问
 │   ├── LikeRepository.java                     # 点赞数据访问
-│   └── FavoriteRepository.java                 # 收藏数据访问
+│   ├── FavoriteRepository.java                 # 收藏数据访问
+│   └── FileRepository.java                     # 文件数据访问
 ├── service/
 │   ├── AuthService.java                        # 认证业务
 │   ├── UserService.java                        # 用户业务
@@ -215,7 +235,8 @@ src/main/java/com/volleyball/volleyballcommunitybackend/
 │   ├── PostService.java                        # 帖子业务
 │   ├── CommentService.java                     # 评论业务
 │   ├── LikeService.java                       # 点赞业务
-│   └── FavoriteService.java                   # 收藏业务
+│   ├── FavoriteService.java                   # 收藏业务
+│   └── FileService.java                       # 文件上传业务
 ├── dto/
 │   ├── request/
 │   │   ├── LoginRequest.java
@@ -228,7 +249,8 @@ src/main/java/com/volleyball/volleyballcommunitybackend/
 │       ├── LoginResponse.java                  # 登录响应（含token）
 │       ├── PostResponse.java                   # 帖子响应
 │       ├── PostDetailResponse.java             # 帖子详情响应（含点赞/收藏/评论数）
-│       └── CommentResponse.java                # 评论响应
+│       ├── CommentResponse.java                # 评论响应
+│       └── FileResponse.java                   # 文件响应
 ├── common/
 │   └── log/
 │       ├── LogUtils.java                       # 日志工具类（敏感信息过滤）
@@ -314,6 +336,11 @@ LogUtils.clearMdc();
 - [x] 点赞（like）- 点赞/取消点赞/状态查询
 - [x] 收藏（favorite）- 收藏/取消收藏/状态查询/列表
 - [x] 帖子详情返回点赞数/收藏数/评论数
+
+### 文件服务 ✅ 已完成
+- [x] 文件上传（avatar/post_image）
+- [x] 文件访问（返回完整URL）
+- [x] 本地存储策略
 
 ### 阶段三：社交功能 🔄 待开发
 - [ ] 关注/粉丝（follow）

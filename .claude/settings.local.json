@@ -7,7 +7,8 @@
       "Bash(curl -s http://localhost:5173)",
       "Bash(pkill -f vite)",
       "Bash(npx vite:*)",
-      "Bash(pkill -f \"node.*vite\")"
+      "Bash(pkill -f \"node.*vite\")",
+      "Bash(git commit:*)"
     ]
   }
 }

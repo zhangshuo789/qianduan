@@ -121,7 +121,7 @@ PUT /api/user/{id}
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | nickname | string | 否 | 昵称 |
-| avatar | string | 否 | 头像URL |
+| avatarFileId | long | 否 | 头像文件ID（上传文件后获取） |
 | bio | string | 否 | 个人简介 |
 
 **返回数据**：
@@ -134,13 +134,13 @@ PUT /api/user/{id}
     "id": 1,
     "username": "user1",
     "nickname": "排球达人",
-    "avatar": "https://example.com/new-avatar.png",
+    "avatar": "http://localhost:8080/api/file/1",
     "bio": "更热爱排球了"
   }
 }
 ```
 
-**注意**：需要登录，只能修改自己的信息
+**注意**：需要登录，只能修改自己的信息。avatar 字段返回完整 URL，可直接展示
 
 ---
 
@@ -778,6 +778,92 @@ GET /api/post/{id}
 ```
 
 **注意**：`liked` 和 `favorited` 字段：已登录返回 true/false，未登录返回 null
+
+---
+
+## 文件服务 /api/file
+
+### 上传文件
+
+```
+POST /api/file/upload
+```
+
+**请求参数**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| file | file | 是 | 上传的文件 |
+| type | string | 是 | 文件类型（avatar/post_image） |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "上传成功",
+  "data": {
+    "id": 1,
+    "fileName": "avatar.png",
+    "url": "http://localhost:8080/api/file/1",
+    "fileSize": 102400,
+    "contentType": "image/png"
+  }
+}
+```
+
+**注意**：需要登录，支持文件类型：avatar、post_image，最大 10MB
+
+---
+
+### 获取文件
+
+```
+GET /api/file/{id}
+```
+
+**路径参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | long | 文件ID |
+
+**返回**：文件二进制流
+
+**响应头**：
+
+```
+Content-Type: image/png
+Content-Disposition: inline; filename="avatar.png"
+```
+
+**注意**：需要登录验证
+
+---
+
+### 获取文件完整URL
+
+```
+GET /api/file/{id}/url
+```
+
+**路径参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | long | 文件ID |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": "http://localhost:8080/api/file/1"
+}
+```
+
+**注意**：返回完整可访问的 URL，前端可直接展示
 
 ---
 

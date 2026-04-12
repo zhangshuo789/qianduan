@@ -206,29 +206,39 @@ async function processPost() {
 }
 
 async function processComments(commentList) {
-  const processed = []
+  // 构建评论树（后端返回扁平数据，通过 parentId/parent_id 构建树形结构）
+  const topLevelComments = []
+  const replyMap = new Map()
+
   for (const c of commentList) {
-    const procComment = { ...c }
+    const proc = { ...c }
     if (c.user?.avatar) {
-      procComment.processedAvatar = await getAvatarUrl(c.user.avatar) || defaultAvatar
+      proc.processedAvatar = await getAvatarUrl(c.user.avatar) || defaultAvatar
     } else {
-      procComment.processedAvatar = defaultAvatar
+      proc.processedAvatar = defaultAvatar
     }
-    if (c.replies && c.replies.length > 0) {
-      procComment.replies = []
-      for (const r of c.replies) {
-        const procReply = { ...r }
-        if (r.user?.avatar) {
-          procReply.processedAvatar = await getAvatarUrl(r.user.avatar) || defaultAvatar
-        } else {
-          procReply.processedAvatar = defaultAvatar
-        }
-        procComment.replies.push(procReply)
-      }
-    }
-    processed.push(procComment)
+    proc.replies = []
+    replyMap.set(c.id, proc)
   }
-  processedComments.value = processed
+
+  for (const c of commentList) {
+    const proc = replyMap.get(c.id)
+    // 支持 parentId 或 parent_id
+    const parentId = c.parentId ?? c.parent_id
+    if (parentId) {
+      const parent = replyMap.get(parentId)
+      if (parent) {
+        parent.replies.push(proc)
+      } else {
+        // 父评论不在当前页，作为顶级评论处理
+        topLevelComments.push(proc)
+      }
+    } else {
+      topLevelComments.push(proc)
+    }
+  }
+
+  processedComments.value = topLevelComments
 }
 
 async function handleLike() {
