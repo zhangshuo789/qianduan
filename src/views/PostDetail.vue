@@ -121,18 +121,18 @@
                       <button v-if="user && user.id === reply.user.id" @click="deleteComment(reply.id)" class="comment-delete">删除</button>
                     </div>
                   </div>
-                </div>
 
-                <!-- 回复的回复输入框 -->
-                <div v-if="replyingTo === reply.id" class="reply-form nested">
-                  <textarea
-                    v-model="replyContent"
-                    :placeholder="`回复 ${reply.user.nickname}...`"
-                    rows="2"
-                  ></textarea>
-                  <div class="reply-form-actions">
-                    <button @click="cancelReply" class="btn-cancel">取消</button>
-                    <button @click="submitReply(reply.id)" class="btn-submit" :disabled="submitting">回复</button>
+                  <!-- 回复的回复输入框 -->
+                  <div v-if="replyingTo === reply.id" class="reply-form nested">
+                    <textarea
+                      v-model="replyContent"
+                      :placeholder="`回复 ${reply.user.nickname}...`"
+                      rows="2"
+                    ></textarea>
+                    <div class="reply-form-actions">
+                      <button @click="cancelReply" class="btn-cancel">取消</button>
+                      <button @click="submitReply(reply.id)" class="btn-submit" :disabled="submitting">回复</button>
+                    </div>
                   </div>
                 </div>
               </div>
