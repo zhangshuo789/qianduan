@@ -50,104 +50,11 @@
         </article>
         <div v-else class="empty">帖子不存在</div>
 
-        <!-- 评论区域 -->
-        <div v-if="post" class="comment-section">
-          <div class="comment-header">
-            <h3>评论 ({{ totalComments }})</h3>
-          </div>
-
-          <!-- 发表评论 -->
-          <div v-if="user" class="comment-form">
-            <textarea
-              v-model="commentContent"
-              placeholder="发表看法..."
-              rows="3"
-            ></textarea>
-            <div class="comment-form-actions">
-              <button @click="submitComment" class="btn-submit" :disabled="submitting">
-                {{ submitting ? '提交中...' : '发表评论' }}
-              </button>
-            </div>
-          </div>
-          <div v-else class="comment-login-tip">
-            <router-link to="/login">登录</router-link>后可发表评论
-          </div>
-
-          <!-- 评论列表 -->
-          <div v-if="commentsLoading" class="loading">加载评论...</div>
-          <div v-else class="comment-list">
-            <div v-if="comments.length === 0" class="comment-empty">暂无评论</div>
-            <div v-for="(c, index) in processedComments" :key="c.id" class="comment-item">
-              <div class="comment-main">
-                <img :src="c.processedAvatar" class="comment-avatar" />
-                <div class="comment-content">
-                  <div class="comment-header-row">
-                    <router-link :to="`/user/${c.user.id}`" class="comment-author">{{ c.user.nickname }}</router-link>
-                    <span class="comment-time">{{ formatDate(c.createdAt) }}</span>
-                  </div>
-                  <p class="comment-text">{{ c.content }}</p>
-                  <div class="comment-actions">
-                    <button v-if="user" @click="showReplyForm(c.id)" class="comment-reply-btn">回复</button>
-                    <button v-if="user && user.id === c.user.id" @click="deleteComment(c.id)" class="comment-delete">删除</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 回复输入框 -->
-              <div v-if="replyingTo === c.id" class="reply-form">
-                <textarea
-                  v-model="replyContent"
-                  :placeholder="`回复 ${c.user.nickname}...`"
-                  rows="2"
-                ></textarea>
-                <div class="reply-form-actions">
-                  <button @click="cancelReply" class="btn-cancel">取消</button>
-                  <button @click="submitReply(c.id)" class="btn-submit" :disabled="submitting">回复</button>
-                </div>
-              </div>
-
-              <!-- 子评论 -->
-              <div v-if="c.replies && c.replies.length > 0" class="comment-replies">
-                <div v-for="reply in c.replies" :key="reply.id" class="reply-item">
-                  <img :src="reply.processedAvatar" class="reply-avatar" />
-                  <div class="reply-content">
-                    <div class="reply-header-row">
-                      <router-link :to="`/user/${reply.user.id}`" class="reply-author">{{ reply.user.nickname }}</router-link>
-                      <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
-                    </div>
-                    <p class="reply-text">{{ reply.content }}</p>
-                    <div class="comment-actions">
-                      <button v-if="user" @click="showReplyForm(reply.id)" class="comment-reply-btn">回复</button>
-                      <button v-if="user && user.id === reply.user.id" @click="deleteComment(reply.id)" class="comment-delete">删除</button>
-                    </div>
-                  </div>
-
-                  <!-- 回复的回复输入框 -->
-                  <div v-if="replyingTo === reply.id" class="reply-form nested">
-                    <textarea
-                      v-model="replyContent"
-                      :placeholder="`回复 ${reply.user.nickname}...`"
-                      rows="2"
-                    ></textarea>
-                    <div class="reply-form-actions">
-                      <button @click="cancelReply" class="btn-cancel">取消</button>
-                      <button @click="submitReply(reply.id)" class="btn-submit" :disabled="submitting">回复</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="totalCommentPages > 1" class="pagination">
-            <button :disabled="commentPage <= 0" @click="loadComments(commentPage - 1)">上一页</button>
-            <span>{{ commentPage + 1 }} / {{ totalCommentPages }}</span>
-            <button :disabled="commentPage >= totalCommentPages - 1" @click="loadComments(commentPage + 1)">下一页</button>
-          </div>
-        </div>
       </div>
 
+      <!-- 右侧边栏 -->
       <div class="sidebar">
+        <!-- 作者信息 -->
         <div class="sidebar-card author-card" v-if="post">
           <div class="card-header">作者信息</div>
           <div class="card-body">
@@ -158,6 +65,75 @@
                 <p class="author-bio">查看他的更多帖子</p>
               </div>
             </router-link>
+          </div>
+        </div>
+
+        <!-- 评论列表 -->
+        <div v-if="post" class="sidebar-card comment-sidebar">
+          <div class="card-header">评论 ({{ totalComments }})</div>
+          <div class="comment-list">
+            <div v-if="commentsLoading" class="loading-sm">加载评论...</div>
+            <div v-else-if="processedComments.length === 0" class="comment-empty">暂无评论</div>
+            <div v-for="c in processedComments" :key="c.id" class="comment-item">
+              <div class="comment-main">
+                <img :src="c.processedAvatar" class="comment-avatar" />
+                <div class="comment-content">
+                  <div class="comment-header-row">
+                    <router-link :to="`/user/${c.user.id}`" class="comment-author">{{ c.user.nickname }}</router-link>
+                  </div>
+                  <p class="comment-text">{{ c.content }}</p>
+                  <div class="comment-actions">
+                    <button v-if="user" @click="showReplyForm(c.id)" class="comment-reply-btn">回复</button>
+                    <button v-if="user && user.id === c.user.id" @click="deleteComment(c.id)" class="comment-delete">删除</button>
+                  </div>
+                </div>
+              </div>
+              <!-- 子评论 -->
+              <div v-if="c.replies && c.replies.length > 0" class="comment-replies">
+                <div v-for="reply in c.replies" :key="reply.id" class="reply-item">
+                  <img :src="reply.processedAvatar" class="reply-avatar" />
+                  <div class="reply-content">
+                    <div class="reply-header-row">
+                      <router-link :to="`/user/${reply.user.id}`" class="reply-author">{{ reply.user.nickname }}</router-link>
+                    </div>
+                    <p class="reply-text">{{ reply.content }}</p>
+                    <div class="comment-actions">
+                      <button v-if="user" @click="showReplyForm(reply.id)" class="comment-reply-btn">回复</button>
+                      <button v-if="user && user.id === reply.user.id" @click="deleteComment(reply.id)" class="comment-delete">删除</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- 回复输入框 -->
+              <div v-if="replyingTo === c.id" class="reply-form">
+                <textarea v-model="replyContent" :placeholder="`回复 ${c.user.nickname}...`" rows="2"></textarea>
+                <div class="reply-form-actions">
+                  <button @click="cancelReply" class="btn-cancel">取消</button>
+                  <button @click="submitReply(c.id)" class="btn-submit" :disabled="submitting">回复</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-if="totalCommentPages > 1" class="pagination">
+            <button :disabled="commentPage <= 0" @click="loadComments(commentPage - 1)">上一页</button>
+            <span>{{ commentPage + 1 }}/{{ totalCommentPages }}</span>
+            <button :disabled="commentPage >= totalCommentPages - 1" @click="loadComments(commentPage + 1)">下一页</button>
+          </div>
+        </div>
+
+        <!-- 发表评论 -->
+        <div v-if="post && user" class="sidebar-card comment-form-sidebar">
+          <div class="card-header">发表评论</div>
+          <div class="card-body">
+            <textarea v-model="commentContent" placeholder="发表看法..." rows="3"></textarea>
+            <button @click="submitComment" class="btn-submit" :disabled="submitting">
+              {{ submitting ? '提交中...' : '发表评论' }}
+            </button>
+          </div>
+        </div>
+        <div v-if="post && !user" class="sidebar-card">
+          <div class="card-body text-center">
+            <router-link to="/login">登录</router-link>后可发表评论
           </div>
         </div>
       </div>
@@ -230,7 +206,6 @@ async function processComments(commentList) {
       if (parent) {
         parent.replies.push(proc)
       } else {
-        // 父评论不在当前页，作为顶级评论处理
         topLevelComments.push(proc)
       }
     } else {
@@ -907,5 +882,238 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--text-muted);
   margin: 0;
+}
+
+/* 侧边栏评论 */
+.comment-sidebar {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.comment-sidebar .comment-list {
+  padding: 8px 0;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.comment-sidebar .comment-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.comment-sidebar .comment-item:last-child {
+  border-bottom: none;
+}
+
+.comment-sidebar .comment-main {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-sidebar .comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.comment-sidebar .comment-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-sidebar .comment-author {
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.comment-sidebar .comment-text {
+  font-size: 13px;
+  color: var(--text);
+  margin: 2px 0 0;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.comment-sidebar .comment-replies {
+  margin-top: 8px;
+  margin-left: 36px;
+  padding-left: 12px;
+  border-left: 2px solid var(--border-light);
+}
+
+.comment-sidebar .reply-item {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.comment-sidebar .reply-item:last-child {
+  margin-bottom: 0;
+}
+
+.comment-sidebar .reply-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.comment-sidebar .reply-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-sidebar .reply-author {
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.comment-sidebar .reply-text {
+  font-size: 12px;
+  color: var(--text);
+  margin: 2px 0 0;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.comment-sidebar .reply-form {
+  margin-top: 8px;
+  margin-left: 36px;
+  padding: 8px;
+  background: var(--bg);
+  border-radius: var(--radius);
+}
+
+.comment-sidebar .reply-form textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  resize: vertical;
+  font-family: inherit;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.comment-sidebar .reply-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.comment-sidebar .btn-cancel {
+  padding: 4px 10px;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.comment-sidebar .btn-submit {
+  padding: 4px 10px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.comment-sidebar .btn-submit:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.comment-sidebar .comment-actions {
+  margin-top: 4px;
+  display: flex;
+  gap: 8px;
+}
+
+.comment-sidebar .comment-reply-btn,
+.comment-sidebar .comment-delete {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.comment-sidebar .comment-reply-btn:hover {
+  color: var(--primary);
+}
+
+.comment-sidebar .comment-delete:hover {
+  color: #cf222e;
+}
+
+.comment-sidebar .pagination {
+  padding: 8px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* 侧边栏评论表单 */
+.comment-form-sidebar .card-body {
+  padding: 12px 16px;
+}
+
+.comment-form-sidebar textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  resize: vertical;
+  font-family: inherit;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.comment-form-sidebar .btn-submit {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.comment-form-sidebar .btn-submit:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.comment-form-sidebar .btn-submit:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.loading-sm {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.text-center {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.text-center a {
+  color: var(--primary);
 }
 </style>
