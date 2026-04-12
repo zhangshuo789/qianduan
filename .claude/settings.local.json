@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d D:/WebProject/**)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(pkill -f vite)",
+      "Bash(npx vite:*)",
+      "Bash(pkill -f \"node.*vite\")"
+    ]
+  }
+}
