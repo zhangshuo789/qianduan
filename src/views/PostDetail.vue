@@ -87,10 +87,25 @@
                   </div>
                   <p class="comment-text">{{ c.content }}</p>
                   <div class="comment-actions">
+                    <button v-if="user" @click="showReplyForm(c.id)" class="comment-reply-btn">回复</button>
                     <button v-if="user && user.id === c.user.id" @click="deleteComment(c.id)" class="comment-delete">删除</button>
                   </div>
                 </div>
               </div>
+
+              <!-- 回复输入框 -->
+              <div v-if="replyingTo === c.id" class="reply-form">
+                <textarea
+                  v-model="replyContent"
+                  :placeholder="`回复 ${c.user.nickname}...`"
+                  rows="2"
+                ></textarea>
+                <div class="reply-form-actions">
+                  <button @click="cancelReply" class="btn-cancel">取消</button>
+                  <button @click="submitReply(c.id)" class="btn-submit" :disabled="submitting">回复</button>
+                </div>
+              </div>
+
               <!-- 子评论 -->
               <div v-if="c.replies && c.replies.length > 0" class="comment-replies">
                 <div v-for="reply in c.replies" :key="reply.id" class="reply-item">
@@ -102,8 +117,22 @@
                     </div>
                     <p class="reply-text">{{ reply.content }}</p>
                     <div class="comment-actions">
+                      <button v-if="user" @click="showReplyForm(reply.id)" class="comment-reply-btn">回复</button>
                       <button v-if="user && user.id === reply.user.id" @click="deleteComment(reply.id)" class="comment-delete">删除</button>
                     </div>
+                  </div>
+                </div>
+
+                <!-- 回复的回复输入框 -->
+                <div v-if="replyingTo === reply.id" class="reply-form nested">
+                  <textarea
+                    v-model="replyContent"
+                    :placeholder="`回复 ${reply.user.nickname}...`"
+                    rows="2"
+                  ></textarea>
+                  <div class="reply-form-actions">
+                    <button @click="cancelReply" class="btn-cancel">取消</button>
+                    <button @click="submitReply(reply.id)" class="btn-submit" :disabled="submitting">回复</button>
                   </div>
                 </div>
               </div>
@@ -152,6 +181,8 @@ const defaultAvatar = 'https://via.placeholder.com/40'
 const comments = ref([])
 const commentsLoading = ref(true)
 const commentContent = ref('')
+const replyingTo = ref(null)
+const replyContent = ref('')
 const submitting = ref(false)
 const commentPage = ref(0)
 const totalCommentPages = ref(0)
@@ -273,6 +304,36 @@ async function submitComment() {
     await postApi.addComment(route.params.id, commentContent.value)
     commentContent.value = ''
     loadComments(0)
+    post.value.commentCount = (post.value.commentCount || 0) + 1
+  } catch (e) {
+    alert(e.message)
+  } finally {
+    submitting.value = false
+  }
+}
+
+function showReplyForm(commentId) {
+  if (!user) {
+    router.push('/login')
+    return
+  }
+  replyingTo.value = commentId
+  replyContent.value = ''
+}
+
+function cancelReply() {
+  replyingTo.value = null
+  replyContent.value = ''
+}
+
+async function submitReply(parentId) {
+  if (!replyContent.value.trim()) return
+  submitting.value = true
+  try {
+    await postApi.addComment(route.params.id, replyContent.value, parentId)
+    replyContent.value = ''
+    replyingTo.value = null
+    loadComments(commentPage.value)
     post.value.commentCount = (post.value.commentCount || 0) + 1
   } catch (e) {
     alert(e.message)
@@ -618,8 +679,12 @@ onMounted(async () => {
 
 .comment-actions {
   margin-top: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
+.comment-reply-btn,
 .comment-delete {
   font-size: 12px;
   color: var(--text-muted);
@@ -629,8 +694,74 @@ onMounted(async () => {
   padding: 0;
 }
 
+.comment-reply-btn:hover {
+  color: var(--primary);
+}
+
 .comment-delete:hover {
   color: #cf222e;
+}
+
+/* 回复表单 */
+.reply-form {
+  margin-top: 12px;
+  margin-left: 48px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: var(--radius);
+}
+
+.reply-form.nested {
+  margin-left: 40px;
+  margin-top: 8px;
+}
+
+.reply-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.reply-form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.reply-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.reply-form-actions .btn-cancel {
+  padding: 6px 12px;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.reply-form-actions .btn-submit {
+  padding: 6px 12px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.reply-form-actions .btn-submit:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
 }
 
 /* 子评论 */
