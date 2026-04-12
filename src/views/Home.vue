@@ -34,7 +34,7 @@
         <div class="right-card">
           <div class="user-section" v-if="user">
             <div class="user-avatar">
-              <img :src="user.avatar || defaultAvatar" />
+              <img :src="displayAvatar" />
             </div>
             <div class="user-details">
               <div class="user-name">{{ user.nickname }}</div>
@@ -76,14 +76,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import NavBar from '@/components/NavBar.vue'
-import { board, getUser } from '@/api'
+import { board, getUser, getAvatarUrl } from '@/api'
 
 const boards = ref([])
 const loading = ref(true)
 const user = ref(getUser())
 const defaultAvatar = 'https://via.placeholder.com/40'
+const displayAvatar = ref(defaultAvatar)
+
+async function updateDisplayAvatar() {
+  if (user.value?.avatar) {
+    const url = await getAvatarUrl(user.value.avatar)
+    displayAvatar.value = url || defaultAvatar
+  } else {
+    displayAvatar.value = defaultAvatar
+  }
+}
+
+watch(user, updateDisplayAvatar, { immediate: true })
 
 onMounted(async () => {
   try {

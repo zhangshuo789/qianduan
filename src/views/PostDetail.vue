@@ -77,9 +77,9 @@
           <div v-if="commentsLoading" class="loading">加载评论...</div>
           <div v-else class="comment-list">
             <div v-if="comments.length === 0" class="comment-empty">暂无评论</div>
-            <div v-for="c in comments" :key="c.id" class="comment-item">
+            <div v-for="(c, index) in processedComments" :key="c.id" class="comment-item">
               <div class="comment-main">
-                <img :src="c.user.avatar || defaultAvatar" class="comment-avatar" />
+                <img :src="c.processedAvatar" class="comment-avatar" />
                 <div class="comment-content">
                   <div class="comment-header-row">
                     <router-link :to="`/user/${c.user.id}`" class="comment-author">{{ c.user.nickname }}</router-link>
@@ -94,7 +94,7 @@
               <!-- 子评论 -->
               <div v-if="c.replies && c.replies.length > 0" class="comment-replies">
                 <div v-for="reply in c.replies" :key="reply.id" class="reply-item">
-                  <img :src="reply.user.avatar || defaultAvatar" class="reply-avatar" />
+                  <img :src="reply.processedAvatar" class="reply-avatar" />
                   <div class="reply-content">
                     <div class="reply-header-row">
                       <router-link :to="`/user/${reply.user.id}`" class="reply-author">{{ reply.user.nickname }}</router-link>
@@ -123,7 +123,7 @@
           <div class="card-header">作者信息</div>
           <div class="card-body">
             <router-link :to="`/user/${post.user.id}`" class="author-info">
-              <img :src="post.user.avatar || defaultAvatar" class="author-avatar" />
+              <img :src="authorAvatar" class="author-avatar" />
               <div class="author-details">
                 <span class="author-name">{{ post.user.nickname }}</span>
                 <p class="author-bio">查看他的更多帖子</p>
@@ -140,7 +140,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NavBar from '@/components/NavBar.vue'
-import { post as postApi, comment as commentApi, getUser } from '@/api'
+import { post as postApi, comment as commentApi, getUser, getAvatarUrl } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -157,10 +157,47 @@ const commentPage = ref(0)
 const totalCommentPages = ref(0)
 const totalComments = ref(0)
 
+const authorAvatar = ref('')
+const processedComments = ref([])
+
 const canEdit = computed(() => user && user.id === post.value?.user?.id)
 
 function formatDate(d) {
   return new Date(d).toLocaleString('zh-CN')
+}
+
+async function processPost() {
+  if (post.value?.user?.avatar) {
+    authorAvatar.value = await getAvatarUrl(post.value.user.avatar) || defaultAvatar
+  } else {
+    authorAvatar.value = defaultAvatar
+  }
+}
+
+async function processComments(commentList) {
+  const processed = []
+  for (const c of commentList) {
+    const procComment = { ...c }
+    if (c.user?.avatar) {
+      procComment.processedAvatar = await getAvatarUrl(c.user.avatar) || defaultAvatar
+    } else {
+      procComment.processedAvatar = defaultAvatar
+    }
+    if (c.replies && c.replies.length > 0) {
+      procComment.replies = []
+      for (const r of c.replies) {
+        const procReply = { ...r }
+        if (r.user?.avatar) {
+          procReply.processedAvatar = await getAvatarUrl(r.user.avatar) || defaultAvatar
+        } else {
+          procReply.processedAvatar = defaultAvatar
+        }
+        procComment.replies.push(procReply)
+      }
+    }
+    processed.push(procComment)
+  }
+  processedComments.value = processed
 }
 
 async function handleLike() {
@@ -221,6 +258,7 @@ async function loadComments(p = 0) {
     totalCommentPages.value = res.data.totalPages
     totalComments.value = res.data.totalElements
     commentPage.value = p
+    await processComments(res.data.content)
   } catch (e) {
     console.error(e)
   } finally {
@@ -258,6 +296,7 @@ onMounted(async () => {
   try {
     const res = await postApi.getDetail(route.params.id)
     post.value = res.data
+    await processPost()
   } catch (e) {
     console.error(e)
   } finally {

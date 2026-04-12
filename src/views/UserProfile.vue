@@ -8,7 +8,7 @@
         <template v-else-if="userInfo">
           <div class="profile-card">
             <div class="profile-header">
-              <img :src="userInfo.avatar || defaultAvatar" class="profile-avatar" />
+              <img :src="displayAvatar" class="profile-avatar" />
               <div class="profile-info">
                 <h1>{{ userInfo.nickname }}</h1>
                 <p class="bio">{{ userInfo.bio || '暂无简介' }}</p>
@@ -96,7 +96,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import NavBar from '@/components/NavBar.vue'
-import { user as userApi, getUser } from '@/api'
+import { user as userApi, getUser, getAvatarUrl } from '@/api'
 
 const route = useRoute()
 const userInfo = ref(null)
@@ -110,6 +110,7 @@ const favorites = ref([])
 const favoritesLoading = ref(false)
 const favoritePage = ref(0)
 const totalFavoritePages = ref(0)
+const displayAvatar = ref('')
 
 const isSelf = computed(() => user && user.id == route.params.id)
 
@@ -126,6 +127,11 @@ async function loadUserInfo() {
   try {
     const res = await userApi.getInfo(route.params.id)
     userInfo.value = res.data
+    if (res.data.avatar) {
+      displayAvatar.value = await getAvatarUrl(res.data.avatar) || defaultAvatar
+    } else {
+      displayAvatar.value = defaultAvatar
+    }
   } catch (e) {
     console.error(e)
   } finally {

@@ -13,8 +13,20 @@
           <div class="form-group">
             <label>头像</label>
             <div class="avatar-preview">
-              <img :src="form.avatar || defaultAvatar" class="preview-img" />
-              <input v-model="form.avatar" type="text" placeholder="输入头像图片URL" />
+              <img :src="avatarPreview || currentAvatar" class="preview-img" />
+              <div class="avatar-actions">
+                <input
+                  ref="fileInput"
+                  type="file"
+                  accept="image/*"
+                  @change="handleFileChange"
+                  class="file-input"
+                />
+                <button type="button" class="btn-upload" @click="triggerFileInput">
+                  {{ uploadingAvatar ? '上传中...' : '选择图片' }}
+                </button>
+                <p class="upload-tip">支持 JPG、PNG 格式，最大 10MB</p>
+              </div>
             </div>
           </div>
 
@@ -43,7 +55,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '@/components/NavBar.vue'
-import { user as userApi, getUser, setAuth } from '@/api'
+import { user as userApi, file as fileApi, getUser, getAvatarUrl } from '@/api'
 
 const router = useRouter()
 const user = getUser()
@@ -53,20 +65,59 @@ if (!user) {
 }
 
 const loading = ref(false)
-const defaultAvatar = 'https://via.placeholder.com/80'
+const uploadingAvatar = ref(false)
+const currentAvatar = ref('')
+const avatarPreview = ref('')
+const avatarFileId = ref(null)
+const fileInput = ref(null)
+
 const form = ref({
   nickname: '',
-  avatar: '',
   bio: ''
 })
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+async function handleFileChange(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+
+  if (file.size > 10 * 1024 * 1024) {
+    alert('图片大小不能超过 10MB')
+    return
+  }
+
+  avatarPreview.value = URL.createObjectURL(file)
+
+  uploadingAvatar.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', 'avatar')
+
+    const res = await fileApi.upload(formData)
+    avatarFileId.value = res.data.id
+  } catch (e) {
+    alert(e.message)
+    avatarPreview.value = ''
+  } finally {
+    uploadingAvatar.value = false
+  }
+}
 
 onMounted(async () => {
   try {
     const res = await userApi.getInfo(user.id)
     form.value = {
       nickname: res.data.nickname || '',
-      avatar: res.data.avatar || '',
       bio: res.data.bio || ''
+    }
+    if (res.data.avatar) {
+      const avatarUrl = await getAvatarUrl(res.data.avatar)
+      currentAvatar.value = avatarUrl || defaultAvatar
+      avatarPreview.value = currentAvatar.value
     }
   } catch (e) {
     console.error(e)
@@ -76,7 +127,16 @@ onMounted(async () => {
 async function handleSubmit() {
   loading.value = true
   try {
-    const res = await userApi.update(user.id, form.value)
+    const data = {
+      nickname: form.value.nickname,
+      bio: form.value.bio
+    }
+
+    if (avatarFileId.value) {
+      data.avatarFileId = avatarFileId.value
+    }
+
+    const res = await userApi.update(user.id, data)
     const updatedUser = { ...user, ...res.data }
     localStorage.setItem('user', JSON.stringify(updatedUser))
     alert('保存成功')
@@ -143,7 +203,7 @@ async function handleSubmit() {
   margin-bottom: 8px;
 }
 
-.form-group input,
+.form-group input[type="text"],
 .form-group textarea {
   width: 100%;
   padding: 10px 12px;
@@ -168,16 +228,50 @@ async function handleSubmit() {
 
 .avatar-preview {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
 }
 
 .preview-img {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid var(--border-light);
+  background: var(--bg);
+}
+
+.avatar-actions {
+  flex: 1;
+}
+
+.file-input {
+  display: none;
+}
+
+.btn-upload {
+  padding: 8px 16px;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-upload:hover {
+  background: var(--bg);
+}
+
+.btn-upload:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 0 0;
 }
 
 .form-actions {

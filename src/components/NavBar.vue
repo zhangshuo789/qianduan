@@ -23,7 +23,7 @@
       <router-link v-if="user" to="/create-post" class="publish-btn">发布</router-link>
 
       <div class="user-info" v-if="user">
-        <img :src="user.avatar || defaultAvatar" class="avatar" @click="toggleMenu" />
+        <img :src="displayAvatar" class="avatar" @click="toggleMenu" />
         <div v-if="menuVisible" class="dropdown-menu">
           <div class="user-card">
             <div class="user-name">{{ user.nickname }}</div>
@@ -48,15 +48,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getUser, clearAuth } from '@/api'
+import { getUser, clearAuth, getAvatarUrl } from '@/api'
 
 const router = useRouter()
 const user = ref(getUser())
 const keyword = ref('')
 const menuVisible = ref(false)
 const defaultAvatar = 'https://via.placeholder.com/40'
+const displayAvatar = ref(defaultAvatar)
+
+async function updateDisplayAvatar() {
+  if (user.value?.avatar) {
+    const url = await getAvatarUrl(user.value.avatar)
+    displayAvatar.value = url || defaultAvatar
+  } else {
+    displayAvatar.value = defaultAvatar
+  }
+}
+
+watch(user, updateDisplayAvatar, { immediate: true })
 
 function toggleMenu() {
   menuVisible.value = !menuVisible.value

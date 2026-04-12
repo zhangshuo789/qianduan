@@ -1,18 +1,47 @@
 const API_BASE = '/api'
 
-async function request(url, options = {}) {
+function getHeaders(options) {
   const token = localStorage.getItem('token')
   const headers = {
-    'Content-Type': 'application/json',
     ...options.headers
   }
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
+  return headers
+}
+
+async function request(url, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...getHeaders(options)
+  }
 
   const res = await fetch(API_BASE + url, {
     ...options,
     headers
+  })
+
+  let data
+  try {
+    data = await res.json()
+  } catch (e) {
+    throw new Error(`响应解析失败: ${res.status} ${res.statusText}`)
+  }
+
+  if (data.code !== 200) {
+    throw new Error(data.message || `请求失败 (${data.code})`)
+  }
+  return data
+}
+
+async function multipartRequest(url, formData) {
+  const headers = getHeaders({})
+
+  const res = await fetch(API_BASE + url, {
+    method: 'POST',
+    headers,
+    body: formData
   })
 
   let data
@@ -117,6 +146,12 @@ export const comment = {
   }
 }
 
+export const file = {
+  upload(formData) {
+    return multipartRequest('/file/upload', formData)
+  }
+}
+
 export function getUser() {
   const data = localStorage.getItem('user')
   return data ? JSON.parse(data) : null
@@ -130,4 +165,9 @@ export function setAuth(token, user) {
 export function clearAuth() {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
+}
+
+export async function getAvatarUrl(avatar) {
+  // 后端返回的 avatar 已是完整 URL，可直接访问
+  return avatar || null
 }
