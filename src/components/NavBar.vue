@@ -88,7 +88,7 @@ function logout() {
 }
 
 function handleClickOutside(e) {
-  if (!e.target.closest('.user-info')) {
+  if (!e.target.closest('.navbar-user')) {
     menuVisible.value = false
   }
 }
