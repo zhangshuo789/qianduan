@@ -111,216 +111,155 @@ onMounted(async () => {
 
 <style scoped>
 .home-page {
-  min-height: 100vh;
-  background: var(--bg);
-}
-
-.main-container {
-  display: flex;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
-  gap: 24px;
+  padding: var(--space-lg);
 }
 
-.left {
-  flex: 2;
+.home-header {
+  margin-bottom: var(--space-lg);
 }
 
-.right {
-  flex: 1;
-  min-width: 280px;
+.home-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-secondary);
 }
 
-.content-section {
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
+.home-subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
 }
 
-.section-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-light);
+.home-content {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--space-lg);
 }
 
-.section-title {
-  font-size: 16px;
+.boards-section h2,
+.user-section h2 {
+  font-size: var(--text-lg);
   font-weight: 600;
-  color: var(--text);
+  color: var(--color-secondary);
+  margin-bottom: var(--space-md);
 }
 
 .board-list {
-  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
 .board-card {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  border-radius: var(--radius);
-  text-decoration: none;
-  transition: background 0.15s;
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  cursor: pointer;
 }
 
 .board-card:hover {
-  background: var(--bg);
-  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
-.board-icon-box {
+.board-card h3 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.board-card p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.board-card-meta {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.user-card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.user-card-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.user-card-avatar {
   width: 48px;
   height: 48px;
-  background: var(--bg);
-  border-radius: var(--radius);
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16px;
-  color: var(--text-secondary);
-}
-
-.board-content h3 {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-
-.board-content p {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin: 0;
-}
-
-.loading {
-  padding: 40px;
-  text-align: center;
-  color: var(--text-muted);
-}
-
-.right-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-
-.card-header {
-  padding: 12px 16px;
-  font-size: 14px;
   font-weight: 600;
-  color: var(--text);
-  border-bottom: 1px solid var(--border-light);
-  background: var(--bg);
+  font-size: var(--text-lg);
 }
 
-.user-section {
-  padding: 20px 16px;
-}
-
-.user-avatar {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 12px;
-}
-
-.user-avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.user-details {
-  text-align: center;
-}
-
-.user-name {
-  font-size: 16px;
+.user-card-name {
+  font-size: var(--text-base);
   font-weight: 600;
-  color: var(--text);
-  margin-bottom: 8px;
+  color: var(--color-text);
 }
 
-.user-stats {
+.user-card-bio {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.active-users {
+  margin-top: var(--space-lg);
+}
+
+.active-users h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+.active-users-list {
   display: flex;
-  justify-content: center;
-  gap: 16px;
-  font-size: 13px;
-  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: var(--space-sm);
 }
 
-.login-tip {
-  text-align: center;
-  color: var(--text-muted);
-  margin-bottom: 16px;
-}
-
-.login-btns {
+.active-user-item {
   display: flex;
-  gap: 12px;
-  justify-content: center;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
 }
 
-.btn-primary {
-  padding: 8px 20px;
-  background: var(--primary);
-  color: #fff;
-  border-radius: var(--radius);
-  text-decoration: none;
-  font-size: 14px;
-}
+@media (max-width: 768px) {
+  .home-content {
+    grid-template-columns: 1fr;
+  }
 
-.btn-primary:hover {
-  background: var(--primary-hover);
-  text-decoration: none;
-}
-
-.btn-secondary {
-  padding: 8px 20px;
-  background: var(--card-bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.btn-secondary:hover {
-  background: var(--bg);
-  text-decoration: none;
-}
-
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1px;
-  background: var(--border-light);
-}
-
-.feature-item {
-  padding: 16px;
-  text-align: center;
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.feature-item:hover {
-  background: var(--bg);
-  color: var(--text);
-  text-decoration: none;
-}
-
-.hot-list {
-  padding: 8px 0;
-}
-
-.hot-item {
-  padding: 12px 16px;
-  font-size: 14px;
-  color: var(--text-muted);
+  .user-section {
+    order: -1;
+  }
 }
 </style>
