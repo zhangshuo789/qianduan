@@ -5,6 +5,7 @@
         <h2 class="login-title">登录</h2>
         <p class="login-subtitle">欢迎回来！</p>
       </div>
+      <div v-if="error" class="error-message">{{ error }}</div>
       <form class="login-form" @submit.prevent="handleLogin">
         <div class="form-group">
           <label>用户名</label>
@@ -33,15 +34,17 @@ import { auth, setAuth } from '@/api'
 const router = useRouter()
 const form = ref({ username: '', password: '' })
 const loading = ref(false)
+const error = ref('')
 
 async function handleLogin() {
+  error.value = ''
   loading.value = true
   try {
     const res = await auth.login(form.value)
     setAuth(res.data.token, res.data.user)
     router.push('/')
   } catch (e) {
-    alert(e.message)
+    error.value = e.message || '登录失败'
   } finally {
     loading.value = false
   }
