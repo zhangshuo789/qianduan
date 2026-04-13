@@ -104,16 +104,14 @@ onMounted(() => {
 
 <style scoped>
 .board-page {
-  min-height: 100vh;
-  background: var(--bg);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-lg);
 }
 
 .main-container {
   display: flex;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px;
-  gap: 24px;
+  gap: var(--space-lg);
 }
 
 .content-area {
@@ -126,66 +124,78 @@ onMounted(() => {
 }
 
 .board-header {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
-  padding: 20px;
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
 }
 
-.board-info h1 {
-  font-size: 22px;
+.board-header h1 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.board-header p {
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
+}
+
+.board-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.board-title {
+  font-size: var(--text-lg);
   font-weight: 600;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-
-.board-info p {
-  color: var(--text-muted);
-  font-size: 14px;
-  margin: 0;
+  color: var(--color-secondary);
 }
 
 .btn-primary {
-  padding: 8px 16px;
-  background: var(--primary);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-primary);
   color: #fff;
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--text-sm);
   white-space: nowrap;
+  transition: background var(--transition-fast);
 }
 
 .btn-primary:hover {
-  background: var(--primary-hover);
+  background: var(--color-primary-hover);
   text-decoration: none;
 }
 
 .post-list {
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
 .post-item {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-lg);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-light);
   text-decoration: none;
-  transition: background 0.15s;
-}
-
-.post-item:last-child {
-  border-bottom: none;
 }
 
 .post-item:hover {
-  background: var(--bg);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
   text-decoration: none;
 }
 
@@ -194,91 +204,111 @@ onMounted(() => {
 }
 
 .post-main h3 {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 6px;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
 }
 
 .post-meta {
   display: flex;
   align-items: center;
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 
 .author {
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .dot {
   width: 3px;
   height: 3px;
-  background: var(--text-muted);
+  background: var(--color-text-muted);
   border-radius: 50%;
-  margin: 0 8px;
+  margin: 0 var(--space-sm);
 }
 
 .post-arrow {
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .empty {
-  padding: 60px 20px;
   text-align: center;
-  color: var(--text-muted);
+  padding: var(--space-2xl);
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.empty p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-md);
 }
 
 .loading {
-  padding: 60px 20px;
+  padding: var(--space-2xl);
   text-align: center;
-  color: var(--text-muted);
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
+  color: var(--color-text-secondary);
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .pagination {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-top: 20px;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
 }
 
-.pagination button {
-  padding: 8px 16px;
-  background: var(--card-bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 14px;
+.pagination-btn {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.pagination button:disabled {
-  color: var(--text-muted);
+.pagination-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
+.pagination-info {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
 .sidebar-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
 }
 
 .card-header {
-  padding: 12px 16px;
-  font-size: 14px;
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--text);
-  border-bottom: 1px solid var(--border-light);
-  background: var(--bg);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
 }
 
 .card-body {
-  padding: 16px;
-  font-size: 14px;
-  color: var(--text-secondary);
+  padding: var(--space-lg);
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
 }
 </style>
