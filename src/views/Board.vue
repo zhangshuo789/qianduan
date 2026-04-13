@@ -16,7 +16,7 @@
 
         <div v-if="loading" class="loading">加载中...</div>
         <div v-else class="post-list">
-          <div v-if="posts.length === 0" class="empty">暂无帖子</div>
+          <div v-if="posts.length === 0" class="empty"><p>暂无帖子</p></div>
           <router-link v-for="p in posts" :key="p.id" :to="`/post/${p.id}`" class="post-item">
             <div class="post-main">
               <h3>{{ p.title }}</h3>
@@ -90,7 +90,7 @@ async function loadPosts(p = 0) {
     totalPages.value = res.data.totalPages
     page.value = p
   } catch (e) {
-    alert(e.message)
+    console.error(e)
   } finally {
     loading.value = false
   }
@@ -144,19 +144,6 @@ onMounted(() => {
 .board-header p {
   color: var(--color-text-secondary);
   font-size: var(--text-base);
-}
-
-.board-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-md);
-}
-
-.board-title {
-  font-size: var(--text-lg);
-  font-weight: 600;
-  color: var(--color-secondary);
 }
 
 .btn-primary {
@@ -262,32 +249,6 @@ onMounted(() => {
   align-items: center;
   gap: var(--space-sm);
   margin-top: var(--space-lg);
-}
-
-.pagination-btn {
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-card);
-  color: var(--color-text);
-  font-size: var(--text-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.pagination-btn:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-info {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
 }
 
 .sidebar-card {
