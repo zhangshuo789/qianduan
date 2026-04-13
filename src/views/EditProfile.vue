@@ -1,7 +1,5 @@
 <template>
   <div class="edit-profile-page">
-    <NavBar />
-
     <div class="edit-profile-card">
       <div class="edit-profile-header">
         <h1 class="edit-profile-title">编辑资料</h1>
@@ -57,7 +55,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import NavBar from '@/components/NavBar.vue'
 import { user as userApi, file as fileApi, getUser, getAvatarUrl } from '@/api'
 
 const router = useRouter()

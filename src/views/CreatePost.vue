@@ -1,7 +1,5 @@
 <template>
   <div class="create-post-page">
-    <NavBar />
-
     <div class="main-container">
       <div class="create-post-card">
         <div class="create-post-header">
@@ -45,7 +43,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import NavBar from '@/components/NavBar.vue'
 import { board, post as postApi, getUser } from '@/api'
 
 const route = useRoute()

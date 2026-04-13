@@ -1,7 +1,5 @@
 <template>
   <div class="user-profile-page">
-    <NavBar />
-
     <div class="main-container">
       <div class="content-area">
         <div v-if="loading" class="loading-state">加载中...</div>
@@ -96,7 +94,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import NavBar from '@/components/NavBar.vue'
 import { user as userApi, getUser, getAvatarUrl } from '@/api'
 
 const route = useRoute()

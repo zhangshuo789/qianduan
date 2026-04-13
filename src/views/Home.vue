@@ -1,7 +1,5 @@
 <template>
   <div class="home-page">
-    <NavBar />
-
     <div class="main-container">
       <div class="left">
         <div class="content-section">
@@ -77,7 +75,6 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import NavBar from '@/components/NavBar.vue'
 import { board, getUser, getAvatarUrl } from '@/api'
 
 const boards = ref([])

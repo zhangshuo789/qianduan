@@ -1,7 +1,5 @@
 <template>
   <div class="post-page">
-    <NavBar />
-
     <div class="main-container">
       <div class="content-area">
         <div v-if="loading" class="loading">加载中...</div>
@@ -144,7 +142,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import NavBar from '@/components/NavBar.vue'
 import { post as postApi, comment as commentApi, getUser, getAvatarUrl } from '@/api'
 
 const route = useRoute()
