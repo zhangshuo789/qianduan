@@ -132,13 +132,13 @@ onMounted(async () => {
   margin-top: var(--space-xs);
 }
 
-.home-content {
+.main-container {
   display: grid;
   grid-template-columns: 1fr 300px;
   gap: var(--space-lg);
 }
 
-.boards-section h2,
+.left h2,
 .user-section h2 {
   font-size: var(--text-lg);
   font-weight: 600;
@@ -178,29 +178,21 @@ onMounted(async () => {
   color: var(--color-text-secondary);
 }
 
-.board-card-meta {
-  display: flex;
-  gap: var(--space-md);
-  margin-top: var(--space-sm);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.user-card {
+.right-card {
   background: var(--color-card);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   box-shadow: var(--shadow-md);
 }
 
-.user-card-info {
+.user-section {
   display: flex;
   align-items: center;
   gap: var(--space-md);
   margin-bottom: var(--space-md);
 }
 
-.user-card-avatar {
+.user-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -213,13 +205,20 @@ onMounted(async () => {
   font-size: var(--text-lg);
 }
 
-.user-card-name {
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.user-name {
   font-size: var(--text-base);
   font-weight: 600;
   color: var(--color-text);
 }
 
-.user-card-bio {
+.user-stats {
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
   margin-top: var(--space-xs);
@@ -254,7 +253,7 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .home-content {
+  .main-container {
     grid-template-columns: 1fr;
   }
 
