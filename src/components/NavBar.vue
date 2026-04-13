@@ -1,17 +1,17 @@
 <template>
-  <nav class="nav-bar">
-    <div class="logo">
-      <router-link to="/" class="logo-link">排球社区</router-link>
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <router-link to="/" class="navbar-logo">排球社区</router-link>
     </div>
 
-    <div class="nav-tabs">
-      <router-link to="/" class="nav-tab">首页</router-link>
-      <router-link to="/article" class="nav-tab">文章</router-link>
-      <router-link to="/chat" class="nav-tab">聊天室</router-link>
+    <div class="navbar-links">
+      <router-link to="/" class="navbar-link">首页</router-link>
+      <router-link to="/article" class="navbar-link">文章</router-link>
+      <router-link to="/chat" class="navbar-link">聊天室</router-link>
     </div>
 
     <div class="nav-actions">
-      <div class="search-box">
+      <div class="navbar-search">
         <input type="text" placeholder="搜索" v-model="keyword" @keydown.enter="handleSearch" />
         <button class="search-btn" @click="handleSearch">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -22,10 +22,10 @@
 
       <router-link v-if="user" to="/create-post" class="publish-btn">发布</router-link>
 
-      <div class="user-info" v-if="user">
-        <img :src="displayAvatar" class="avatar" @click="toggleMenu" />
-        <div v-if="menuVisible" class="dropdown-menu">
-          <div class="user-card">
+      <div class="navbar-user" v-if="user">
+        <img :src="displayAvatar" class="navbar-avatar" @click="toggleMenu" />
+        <div v-if="menuVisible" class="navbar-dropdown-menu">
+          <div class="navbar-dropdown-item">
             <div class="user-name">{{ user.nickname }}</div>
             <div class="user-id">UID: {{ user.id }}</div>
           </div>
