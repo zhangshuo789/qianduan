@@ -24,6 +24,12 @@
             <label class="form-label">内容</label>
             <textarea v-model="form.content" class="form-input" placeholder="请输入内容，支持 Markdown 格式" rows="16" required></textarea>
           </div>
+          <div v-if="error" class="error-message">{{ error }}</div>
+          <div class="form-group">
+            <div class="file-upload-area">
+              <p>点击或拖拽文件到此处上传</p>
+            </div>
+          </div>
           <div class="form-actions">
             <button type="button" class="btn-cancel" @click="router.push('/')">取消</button>
             <button type="submit" class="btn-submit" :disabled="loading">
@@ -52,6 +58,7 @@ if (!user) {
 
 const isEdit = ref(false)
 const loading = ref(false)
+const error = ref('')
 const boards = ref([])
 const form = ref({
   boardId: route.query.boardId || '',
@@ -64,7 +71,7 @@ onMounted(async () => {
     const res = await board.list()
     boards.value = res.data
   } catch (e) {
-    alert(e.message)
+    error.value = e.message
   }
 
   if (route.params.id) {
@@ -77,7 +84,7 @@ onMounted(async () => {
         content: res.data.content
       }
     } catch (e) {
-      alert(e.message)
+      error.value = e.message
     }
   }
 })
@@ -95,7 +102,7 @@ async function handleSubmit() {
     }
     router.push('/')
   } catch (e) {
-    alert(e.message)
+    error.value = e.message
   } finally {
     loading.value = false
   }
