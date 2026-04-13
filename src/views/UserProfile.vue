@@ -10,7 +10,7 @@
             <div class="profile-header">
               <img :src="displayAvatar" class="profile-avatar" />
               <div class="profile-info">
-                <h1>{{ userInfo.nickname }}</h1>
+                <h1 class="profile-name">{{ userInfo.nickname }}</h1>
                 <p class="bio">{{ userInfo.bio || '暂无简介' }}</p>
                 <p class="join-date">加入于 {{ formatDate(userInfo.createdAt) }}</p>
               </div>
@@ -215,6 +215,13 @@ onMounted(() => {
 }
 
 .profile-info h1 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.profile-name {
   font-size: var(--text-xl);
   font-weight: 700;
   color: var(--color-secondary);
