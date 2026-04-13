@@ -57,7 +57,7 @@
 
 .dropdown-enter-to,
 .dropdown-leave-from {
-  max-height: 500px;
+  max-height: var(--dropdown-max-height, 500px);
   opacity: 1;
 }
 
