@@ -67,6 +67,8 @@ if (!user) {
   router.push('/login')
 }
 
+const defaultAvatar = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Ccircle cx="32" cy="32" r="32" fill="%23FF6B35"/%3E%3Ctext x="32" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold"%3E%3F%3C/text%3E%3C/svg%3E'
+
 const loading = ref(false)
 const uploadingAvatar = ref(false)
 const currentAvatar = ref('')
