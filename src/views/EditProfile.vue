@@ -2,51 +2,54 @@
   <div class="edit-profile-page">
     <NavBar />
 
-    <div class="main-container">
-      <div class="content-area">
-        <div class="page-header">
-          <h1>编辑资料</h1>
-          <router-link :to="`/user/${user?.id}`" class="back-link">返回个人主页</router-link>
-        </div>
+    <div class="edit-profile-card">
+      <div class="edit-profile-header">
+        <h1 class="edit-profile-title">编辑资料</h1>
+      </div>
 
-        <form @submit.prevent="handleSubmit" class="edit-form">
-          <div class="form-group">
-            <label>头像</label>
+      <div v-if="error" class="error-message">{{ error }}</div>
+      <div v-if="success" class="success-message">{{ success }}</div>
+
+      <form @submit.prevent="handleSubmit" class="edit-profile-form">
+        <div class="form-group">
+          <label class="form-label">头像</label>
+          <div class="avatar-upload">
             <div class="avatar-preview">
-              <img :src="avatarPreview || currentAvatar" class="preview-img" />
-              <div class="avatar-actions">
-                <input
-                  ref="fileInput"
-                  type="file"
-                  accept="image/*"
-                  @change="handleFileChange"
-                  class="file-input"
-                />
-                <button type="button" class="btn-upload" @click="triggerFileInput">
-                  {{ uploadingAvatar ? '上传中...' : '选择图片' }}
-                </button>
-                <p class="upload-tip">支持 JPG、PNG 格式，最大 10MB</p>
-              </div>
+              {{ form.nickname ? form.nickname.charAt(0).toUpperCase() : '?' }}
+            </div>
+            <div class="avatar-actions">
+              <input
+                ref="fileInput"
+                type="file"
+                accept="image/*"
+                @change="handleFileChange"
+                class="file-input"
+              />
+              <button type="button" class="avatar-upload-btn" @click="triggerFileInput">
+                {{ uploadingAvatar ? '上传中...' : '选择图片' }}
+              </button>
+              <p class="upload-tip">支持 JPG、PNG 格式，最大 10MB</p>
             </div>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label>昵称</label>
-            <input v-model="form.nickname" type="text" placeholder="输入昵称" required />
-          </div>
+        <div class="form-group">
+          <label class="form-label">昵称</label>
+          <input v-model="form.nickname" type="text" placeholder="输入昵称" class="form-input" required />
+        </div>
 
-          <div class="form-group">
-            <label>个人简介</label>
-            <textarea v-model="form.bio" placeholder="介绍一下自己" rows="4"></textarea>
-          </div>
+        <div class="form-group">
+          <label class="form-label">个人简介</label>
+          <textarea v-model="form.bio" placeholder="介绍一下自己" rows="4"></textarea>
+        </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn-primary" :disabled="loading">
-              {{ loading ? '保存中...' : '保存' }}
-            </button>
-          </div>
-        </form>
-      </div>
+        <div class="form-actions">
+          <router-link :to="`/user/${user?.id}`" class="btn-cancel">取消</router-link>
+          <button type="submit" class="btn-save" :disabled="loading">
+            {{ loading ? '保存中...' : '保存' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>
@@ -70,6 +73,8 @@ const currentAvatar = ref('')
 const avatarPreview = ref('')
 const avatarFileId = ref(null)
 const fileInput = ref(null)
+const error = ref('')
+const success = ref('')
 
 const form = ref({
   nickname: '',
@@ -85,13 +90,14 @@ async function handleFileChange(e) {
   if (!file) return
 
   if (file.size > 10 * 1024 * 1024) {
-    alert('图片大小不能超过 10MB')
+    error.value = '图片大小不能超过 10MB'
     return
   }
 
   avatarPreview.value = URL.createObjectURL(file)
 
   uploadingAvatar.value = true
+  error.value = ''
   try {
     const formData = new FormData()
     formData.append('file', file)
@@ -100,7 +106,7 @@ async function handleFileChange(e) {
     const res = await fileApi.upload(formData)
     avatarFileId.value = res.data.id
   } catch (e) {
-    alert(e.message)
+    error.value = e.message
     avatarPreview.value = ''
   } finally {
     uploadingAvatar.value = false
@@ -120,12 +126,14 @@ onMounted(async () => {
       avatarPreview.value = currentAvatar.value
     }
   } catch (e) {
-    console.error(e)
+    error.value = '加载用户信息失败'
   }
 })
 
 async function handleSubmit() {
   loading.value = true
+  error.value = ''
+  success.value = ''
   try {
     const data = {
       nickname: form.value.nickname,
@@ -139,10 +147,12 @@ async function handleSubmit() {
     const res = await userApi.update(user.id, data)
     const updatedUser = { ...user, ...res.data }
     localStorage.setItem('user', JSON.stringify(updatedUser))
-    alert('保存成功')
-    router.push(`/user/${user.id}`)
+    success.value = '保存成功'
+    setTimeout(() => {
+      router.push(`/user/${user.id}`)
+    }, 1000)
   } catch (e) {
-    alert(e.message)
+    error.value = e.message
   } finally {
     loading.value = false
   }
@@ -151,152 +161,177 @@ async function handleSubmit() {
 
 <style scoped>
 .edit-profile-page {
-  min-height: 100vh;
-  background: var(--bg);
-}
-
-.main-container {
   max-width: 600px;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--space-lg);
 }
 
-.content-area {
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
-  padding: 24px;
+.edit-profile-card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-xl);
 }
 
-.page-header {
+.edit-profile-header {
+  margin-bottom: var(--space-lg);
+}
+
+.edit-profile-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.edit-profile-form .form-group {
+  margin-bottom: var(--space-md);
+}
+
+.edit-profile-form .form-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+
+.edit-profile-form .form-input,
+.edit-profile-form textarea {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.edit-profile-form .form-input:focus,
+.edit-profile-form textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+}
+
+.edit-profile-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.avatar-upload {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.page-header h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.back-link {
-  font-size: 14px;
-  color: var(--text-secondary);
-  text-decoration: none;
-}
-
-.back-link:hover {
-  color: var(--text);
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 8px;
-}
-
-.form-group input[type="text"],
-.form-group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card-bg);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-.form-group textarea {
-  resize: vertical;
-  line-height: 1.6;
+  gap: var(--space-md);
 }
 
 .avatar-preview {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.preview-img {
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid var(--border-light);
-  background: var(--bg);
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--text-xl);
 }
 
-.avatar-actions {
-  flex: 1;
+.avatar-upload-btn {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.avatar-upload-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.btn-cancel {
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-text);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.btn-cancel:hover {
+  background: var(--color-bg);
+}
+
+.btn-save {
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-save:hover {
+  background: var(--color-primary-dark);
+  transform: scale(1.02);
+}
+
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  background: #FEF2F2;
+  color: var(--color-error);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-md);
+}
+
+.success-message {
+  background: #F0FDF4;
+  color: var(--color-success);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-md);
 }
 
 .file-input {
   display: none;
 }
 
-.btn-upload {
-  padding: 8px 16px;
-  background: var(--card-bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.btn-upload:hover {
-  background: var(--bg);
-}
-
-.btn-upload:disabled {
-  color: var(--text-muted);
-  cursor: not-allowed;
+.avatar-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
 }
 
 .upload-tip {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 8px 0 0;
-}
-
-.form-actions {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-light);
-}
-
-.btn-primary {
-  padding: 10px 24px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.btn-primary:disabled {
-  background: var(--text-muted);
-  cursor: not-allowed;
+  font-size: var(--text-xs);
+  color: var(--color-text-light);
+  margin: 0;
 }
 </style>
