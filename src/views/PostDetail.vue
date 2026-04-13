@@ -508,15 +508,15 @@ onMounted(async () => {
 .btn-delete {
   padding: var(--space-sm) var(--space-md);
   background: var(--color-card);
-  color: #cf222e;
-  border: 1px solid #cf222e;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   cursor: pointer;
 }
 
 .btn-delete:hover {
-  background: #ffebe9;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .loading, .empty {
@@ -587,9 +587,6 @@ onMounted(async () => {
 
 /* 评论侧边栏 */
 .comment-sidebar {
-  background: var(--color-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
   padding: var(--space-md);
 }
 
@@ -687,7 +684,7 @@ onMounted(async () => {
 }
 
 .comment-sidebar .comment-delete:hover {
-  color: #cf222e;
+  color: var(--color-error);
 }
 
 /* 嵌套回复 */
