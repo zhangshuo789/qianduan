@@ -1,32 +1,32 @@
 <template>
-  <div class="create-page">
+  <div class="create-post-page">
     <NavBar />
 
     <div class="main-container">
-      <div class="content-area">
-        <div class="page-header">
-          <h1>{{ isEdit ? '编辑帖子' : '发布帖子' }}</h1>
-          <router-link to="/" class="back-link">返回首页</router-link>
+      <div class="create-post-card">
+        <div class="create-post-header">
+          <h1 class="create-post-title">{{ isEdit ? '编辑帖子' : '发布帖子' }}</h1>
         </div>
 
-        <form @submit.prevent="handleSubmit" class="post-form">
+        <form @submit.prevent="handleSubmit" class="create-post-form">
           <div class="form-group">
-            <label>板块</label>
-            <select v-model="form.boardId" required :disabled="isEdit">
+            <label class="form-label">板块</label>
+            <select v-model="form.boardId" class="board-select" required :disabled="isEdit">
               <option value="">请选择板块</option>
               <option v-for="b in boards" :key="b.id" :value="b.id">{{ b.name }}</option>
             </select>
           </div>
           <div class="form-group">
-            <label>标题</label>
-            <input v-model="form.title" type="text" placeholder="请输入标题 (5-100字符)" required maxlength="100" />
+            <label class="form-label">标题</label>
+            <input v-model="form.title" class="form-input" type="text" placeholder="请输入标题 (5-100字符)" required maxlength="100" />
           </div>
           <div class="form-group">
-            <label>内容</label>
-            <textarea v-model="form.content" placeholder="请输入内容，支持 Markdown 格式" rows="16" required></textarea>
+            <label class="form-label">内容</label>
+            <textarea v-model="form.content" class="form-input" placeholder="请输入内容，支持 Markdown 格式" rows="16" required></textarea>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn-primary" :disabled="loading">
+            <button type="button" class="btn-cancel" @click="router.push('/')">取消</button>
+            <button type="submit" class="btn-submit" :disabled="loading">
               {{ loading ? '提交中...' : '提交' }}
             </button>
           </div>
@@ -103,107 +103,148 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
-.create-page {
-  min-height: 100vh;
-  background: var(--bg);
-}
-
-.main-container {
+.create-post-page {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--space-lg);
 }
 
-.content-area {
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
-  padding: 24px;
+.create-post-card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-xl);
 }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
+.create-post-header {
+  margin-bottom: var(--space-lg);
 }
 
-.page-header h1 {
-  font-size: 20px;
+.create-post-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.create-post-form .form-group {
+  margin-bottom: var(--space-md);
+}
+
+.create-post-form .form-label {
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--text);
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
 }
 
-.back-link {
-  font-size: 14px;
-  color: var(--text-secondary);
-  text-decoration: none;
-}
-
-.back-link:hover {
-  color: var(--text);
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 8px;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
+.create-post-form .form-input {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card-bg);
-  color: var(--text);
-  font-family: inherit;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.create-post-form .form-input:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
 }
 
-.form-group textarea {
-  resize: vertical;
+.create-post-form textarea {
   min-height: 200px;
-  line-height: 1.6;
+  resize: vertical;
 }
 
-.form-actions {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-light);
-}
-
-.btn-primary {
-  padding: 10px 24px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 14px;
-  font-weight: 500;
+.board-select {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  background: var(--color-card);
   cursor: pointer;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
+.board-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
 }
 
-.btn-primary:disabled {
-  background: var(--text-muted);
+.file-upload-area {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.file-upload-area:hover {
+  border-color: var(--color-primary);
+  background: rgba(255, 107, 53, 0.05);
+}
+
+.file-upload-area p {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.btn-cancel {
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-text);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-cancel:hover {
+  background: var(--color-bg);
+}
+
+.btn-submit {
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-submit:hover {
+  background: var(--color-primary-dark);
+  transform: scale(1.02);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  background: #FEF2F2;
+  color: var(--color-error);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-md);
 }
 </style>
