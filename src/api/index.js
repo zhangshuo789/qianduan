@@ -84,6 +84,12 @@ export const user = {
   },
   getFavorites(id, page = 0, size = 10) {
     return request(`/user/${id}/favorites?page=${page}&size=${size}`)
+  },
+  getStats(id) {
+    return request(`/user/${id}/stats`)
+  },
+  getFeed(id, page = 0, size = 10) {
+    return request(`/user/${id}/feed?page=${page}&size=${size}`)
   }
 }
 
@@ -149,6 +155,125 @@ export const comment = {
 export const file = {
   upload(formData) {
     return multipartRequest('/file/upload', formData)
+  }
+}
+
+export const follow = {
+  follow(userId) {
+    return request(`/follow/${userId}`, { method: 'POST' })
+  },
+  unfollow(userId) {
+    return request(`/follow/${userId}`, { method: 'DELETE' })
+  },
+  getFollowStatus(userId) {
+    return request(`/follow/${userId}/status`)
+  },
+  getFollowing(userId, page = 0, size = 10) {
+    return request(`/user/${userId}/following?page=${page}&size=${size}`)
+  },
+  getFollowers(userId, page = 0, size = 10) {
+    return request(`/user/${userId}/followers?page=${page}&size=${size}`)
+  },
+  getFriends(userId, page = 0, size = 10) {
+    return request(`/user/${userId}/friends?page=${page}&size=${size}`)
+  }
+}
+
+export const message = {
+  getConversations() {
+    return request('/message/conversations')
+  },
+  getPrivateMessages(userId, page = 0, size = 20) {
+    return request(`/message/private/${userId}?page=${page}&size=${size}`)
+  },
+  sendPrivateMessage(userId, content) {
+    return request(`/message/private/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    })
+  },
+  markAsRead(conversationWithUserId) {
+    return request('/message/read', {
+      method: 'POST',
+      body: JSON.stringify({ conversationWithUserId })
+    })
+  },
+  getUnreadCount() {
+    return request('/message/unread-count')
+  }
+}
+
+export const group = {
+  create(data) {
+    return request('/group', { method: 'POST', body: JSON.stringify(data) })
+  },
+  getInfo(id) {
+    return request(`/group/${id}`)
+  },
+  getMembers(id) {
+    return request(`/group/${id}/members`)
+  },
+  addMember(groupId, userId) {
+    return request(`/group/${groupId}/members?userId=${userId}`, { method: 'POST' })
+  },
+  removeMember(groupId, userId) {
+    return request(`/group/${groupId}/members/${userId}`, { method: 'DELETE' })
+  },
+  leave(groupId, userId) {
+    return request(`/group/${groupId}/members/${userId}/leave`, { method: 'POST' })
+  },
+  banMember(groupId, userId) {
+    return request(`/group/${groupId}/ban/${userId}`, { method: 'POST' })
+  },
+  unbanMember(groupId, userId) {
+    return request(`/group/${groupId}/unban/${userId}`, { method: 'DELETE' })
+  },
+  getMessages(groupId, page = 0, size = 20) {
+    return request(`/group/${groupId}/messages?page=${page}&size=${size}`)
+  },
+  sendMessage(groupId, content) {
+    return request(`/group/${groupId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    })
+  }
+}
+
+// SSE 全局实例
+let eventSource = null
+
+export function connectSSE(onMessage, onGroupMessage) {
+  if (eventSource) {
+    eventSource.close()
+  }
+  const token = localStorage.getItem('token')
+  if (!token) return null
+
+  eventSource = new EventSource(`/api/sse/connect?token=${encodeURIComponent(token)}`)
+
+  eventSource.addEventListener('newMessage', (e) => {
+    try {
+      onMessage(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE message parse error:', err)
+    }
+  })
+
+  eventSource.addEventListener('newGroupMessage', (e) => {
+    try {
+      onGroupMessage(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE group message parse error:', err)
+    }
+  })
+
+  return eventSource
+}
+
+export function disconnectSSE() {
+  if (eventSource) {
+    eventSource.close()
+    eventSource = null
   }
 }
 

@@ -1,56 +1,52 @@
-<template>
-  <nav class="navbar">
-    <div class="navbar-logo">
-      <router-link to="/" class="navbar-logo">排球社区</router-link>
-    </div>
+﻿<template>
+  <header class="nav-header ui-pop-in">
+    <div class="nav-container">
+      <router-link to="/" class="nav-logo">排球社区</router-link>
 
-    <div class="navbar-links">
-      <router-link to="/" class="navbar-link">首页</router-link>
-      <router-link to="/article" class="navbar-link">文章</router-link>
-      <router-link to="/chat" class="navbar-link">聊天室</router-link>
-    </div>
+      <nav class="nav-links">
+        <router-link to="/" class="nav-link">首页</router-link>
+        <router-link v-if="user" :to="`/user/${user.id}`" class="nav-link">个人中心</router-link>
+      </nav>
 
-    <div class="nav-actions">
-      <div class="navbar-search">
-        <input type="text" placeholder="搜索" v-model="keyword" @keydown.enter="handleSearch" />
-        <button class="search-btn" @click="handleSearch">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-        </button>
-      </div>
+      <div class="nav-actions">
+        <div class="nav-search">
+          <input v-model="keyword" type="text" class="nav-search-input" placeholder="搜索帖子（即将上线）" @keydown.enter="handleSearch" />
+          <button class="nav-search-button" @click="handleSearch">搜索</button>
+        </div>
 
-      <router-link v-if="user" to="/create-post" class="publish-btn">发布</router-link>
+        <router-link v-if="user" to="/create-post" class="ui-button ui-button-primary nav-create-btn">发布帖子</router-link>
 
-      <div class="navbar-user" v-if="user">
-        <img :src="displayAvatar" class="navbar-avatar" @click="toggleMenu" />
-        <div v-if="menuVisible" class="navbar-dropdown-menu">
-          <div class="navbar-dropdown-item">
-            <div class="user-name">{{ user.nickname }}</div>
-            <div class="user-id">UID: {{ user.id }}</div>
-          </div>
-          <ul class="menu-list">
-            <li><router-link :to="`/user/${user.id}`">我的文章</router-link></li>
-            <li><router-link :to="`/user/${user.id}`">我的喜欢</router-link></li>
-            <li><router-link :to="`/user/${user.id}`">我的收藏</router-link></li>
-          </ul>
-          <div class="menu-footer">
-            <a @click="logout">退出登录</a>
+        <div v-if="user" class="nav-user">
+          <img :src="displayAvatar" class="nav-avatar" alt="用户头像" @click="toggleMenu" />
+          <div v-if="menuVisible" class="nav-menu ui-pop-in">
+            <div class="nav-menu-user">
+              <p class="nav-menu-name">{{ user.nickname }}</p>
+              <p class="nav-menu-id">UID: {{ user.id }}</p>
+            </div>
+            <router-link :to="`/user/${user.id}`" class="nav-menu-item">我的帖子</router-link>
+            <router-link :to="`/user/${user.id}?tab=favorites`" class="nav-menu-item">我的收藏</router-link>
+            <router-link to="/messages" class="nav-menu-item">
+              我的私信
+              <span v-if="unreadCount > 0" class="nav-menu-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+            </router-link>
+            <router-link to="/groups" class="nav-menu-item">我的群聊</router-link>
+            <button class="nav-menu-logout" @click="logout">退出登录</button>
           </div>
         </div>
-      </div>
-      <div v-else class="auth-btns">
-        <router-link to="/login">登录</router-link>
-        <router-link to="/register">注册</router-link>
+
+        <div v-else class="nav-auth">
+          <router-link to="/login" class="ui-button ui-button-secondary">登录</router-link>
+          <router-link to="/register" class="ui-button ui-button-primary">注册</router-link>
+        </div>
       </div>
     </div>
-  </nav>
+  </header>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getUser, clearAuth, getAvatarUrl } from '@/api'
+import { getUser, clearAuth, getAvatarUrl, message as messageApi } from '@/api'
 
 const router = useRouter()
 const user = ref(getUser())
@@ -58,6 +54,16 @@ const keyword = ref('')
 const menuVisible = ref(false)
 const defaultAvatar = 'https://via.placeholder.com/40'
 const displayAvatar = ref(defaultAvatar)
+const unreadCount = ref(0)
+
+async function loadUnreadCount() {
+  try {
+    const res = await messageApi.getUnreadCount()
+    unreadCount.value = res.data?.totalUnread || 0
+  } catch (e) {
+    console.error(e)
+  }
+}
 
 async function updateDisplayAvatar() {
   if (user.value?.avatar) {
@@ -69,6 +75,13 @@ async function updateDisplayAvatar() {
 }
 
 watch(user, updateDisplayAvatar, { immediate: true })
+watch(user, (newUser) => {
+  if (newUser) {
+    loadUnreadCount()
+  } else {
+    unreadCount.value = 0
+  }
+}, { immediate: true })
 
 function toggleMenu() {
   menuVisible.value = !menuVisible.value
@@ -76,19 +89,20 @@ function toggleMenu() {
 
 function handleSearch() {
   if (keyword.value.trim()) {
-    // TODO: implement search
+    alert('搜索功能正在开发中')
   }
 }
 
 function logout() {
   clearAuth()
   user.value = null
+  unreadCount.value = 0
   menuVisible.value = false
   router.push('/')
 }
 
 function handleClickOutside(e) {
-  if (!e.target.closest('.navbar-user')) {
+  if (!e.target.closest('.nav-user')) {
     menuVisible.value = false
   }
 }
@@ -103,132 +117,211 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.navbar {
+.nav-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 64px;
-  background: var(--color-secondary);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 72px;
+  border-bottom: 1px solid #d2dae5;
+  background-color: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   z-index: 1000;
 }
 
-.navbar-container {
+.nav-container {
   max-width: 1200px;
-  margin: 0 auto;
   height: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--space-lg);
+  gap: var(--space-6);
 }
 
-.navbar-logo {
+.nav-logo {
   font-size: var(--text-lg);
   font-weight: 700;
-  color: white;
-  text-decoration: none;
-}
-
-.navbar-logo:hover {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.navbar-links {
-  display: flex;
-  align-items: center;
-  gap: var(--space-lg);
-}
-
-.navbar-link {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: var(--text-base);
-  font-weight: 500;
-  transition: color var(--transition-fast);
-}
-
-.navbar-link:hover,
-.navbar-link.router-link-active {
-  color: white;
-}
-
-.navbar-search {
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-main);
+  letter-spacing: 1px;
+  padding: 6px 10px;
   border-radius: var(--radius-md);
-  padding: var(--space-xs) var(--space-md);
 }
 
-.navbar-search input {
-  background: transparent;
+.nav-links {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.nav-link {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.nav-link:hover,
+.nav-link.router-link-active {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+.nav-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.nav-search {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  height: 42px;
+  background-color: #ffffff;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.nav-search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+}
+
+.nav-search-input {
+  width: 220px;
   border: none;
-  color: white;
+  padding: 0 var(--space-3);
+  color: var(--color-text-main);
+}
+
+.nav-search-input:focus {
   outline: none;
-  width: 200px;
-  font-size: var(--text-sm);
 }
 
-.navbar-search input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+.nav-search-button {
+  height: 100%;
+  border: none;
+  border-left: 1px solid var(--color-border);
+  background-color: var(--color-bg-soft);
+  padding: 0 var(--space-3);
+  color: var(--color-text-secondary);
 }
 
-.navbar-user {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
+.nav-search-button:hover {
+  background-color: #eef2f7;
 }
 
-.navbar-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: var(--text-sm);
-  cursor: pointer;
-  transition: transform var(--transition-fast);
+.nav-create-btn {
+  white-space: nowrap;
 }
 
-.navbar-avatar:hover {
-  transform: scale(1.05);
-}
-
-.navbar-dropdown {
+.nav-user {
   position: relative;
 }
 
-.navbar-dropdown-menu {
+.nav-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.nav-avatar:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-menu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   right: 0;
-  background: white;
+  min-width: 200px;
+  background-color: #fff;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  min-width: 160px;
   overflow: hidden;
 }
 
-.navbar-dropdown-item {
-  display: block;
-  padding: var(--space-sm) var(--space-md);
-  color: var(--color-text);
+.nav-menu-user {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.nav-menu-name {
   font-size: var(--text-sm);
-  transition: background var(--transition-fast);
+  font-weight: 600;
 }
 
-.navbar-dropdown-item:hover {
-  background: var(--color-bg);
-  color: var(--color-text);
+.nav-menu-id {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 
-.main-content {
-  padding-top: 64px;
-  min-height: 100vh;
+.nav-menu-item,
+.nav-menu-logout {
+  width: 100%;
+  display: block;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.nav-menu-item:hover,
+.nav-menu-logout:hover {
+  background-color: var(--color-bg-soft);
+  color: var(--color-text-main);
+}
+
+.nav-menu-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #ef4444;
+  border-radius: 999px;
+  margin-left: 6px;
+}
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@media (max-width: 960px) {
+  .nav-search {
+    display: none;
+  }
+
+  .nav-links {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .nav-container {
+    padding: 0 var(--space-4);
+  }
+
+  .nav-create-btn {
+    display: none;
+  }
 }
 </style>
