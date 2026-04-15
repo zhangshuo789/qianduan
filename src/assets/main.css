@@ -1,5 +1,15 @@
-@import './base.css';
+@import './styles/variables.css';
+@import './styles/base.css';
+@import './styles/animations.css';
+@import './styles/components.css';
 
 #app {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  padding-top: 72px;
 }

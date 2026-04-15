@@ -1,41 +1,109 @@
-﻿<template>
+<template>
   <header class="nav-header ui-pop-in">
     <div class="nav-container">
-      <router-link to="/" class="nav-logo">排球社区</router-link>
+      <router-link to="/" class="nav-logo">
+        <span class="nav-logo-icon">🏐</span>
+        <span class="nav-logo-text">排球社区</span>
+      </router-link>
 
       <nav class="nav-links">
-        <router-link to="/" class="nav-link">首页</router-link>
-        <router-link v-if="user" :to="`/user/${user.id}`" class="nav-link">个人中心</router-link>
+        <router-link to="/" class="nav-link">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>首页</span>
+        </router-link>
+        <router-link v-if="user" :to="`/user/${user.id}`" class="nav-link">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>个人中心</span>
+        </router-link>
       </nav>
 
       <div class="nav-actions">
         <div class="nav-search">
-          <input v-model="keyword" type="text" class="nav-search-input" placeholder="搜索帖子（即将上线）" @keydown.enter="handleSearch" />
+          <svg class="nav-search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input v-model="keyword" type="text" class="nav-search-input" placeholder="搜索帖子..." @keydown.enter="handleSearch" />
           <button class="nav-search-button" @click="handleSearch">搜索</button>
         </div>
 
-        <router-link v-if="user" to="/create-post" class="ui-button ui-button-primary nav-create-btn">发布帖子</router-link>
+        <router-link v-if="user" to="/create-post" class="ui-button ui-button-primary nav-create-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>发布帖子</span>
+        </router-link>
 
         <div v-if="user" class="nav-user">
-          <img :src="displayAvatar" class="nav-avatar" alt="用户头像" @click="toggleMenu" />
-          <div v-if="menuVisible" class="nav-menu ui-pop-in">
-            <div class="nav-menu-user">
-              <p class="nav-menu-name">{{ user.nickname }}</p>
-              <p class="nav-menu-id">UID: {{ user.id }}</p>
+          <button class="nav-user-trigger" @click="toggleMenu">
+            <img :src="displayAvatar" class="nav-avatar" alt="用户头像" />
+            <span class="nav-user-name">{{ user.nickname }}</span>
+            <svg class="nav-user-arrow" :class="{ rotated: menuVisible }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <Transition name="dropdown">
+            <div v-if="menuVisible" class="nav-menu">
+              <div class="nav-menu-header">
+                <img :src="displayAvatar" class="nav-menu-avatar" />
+                <div class="nav-menu-user-info">
+                  <p class="nav-menu-name">{{ user.nickname }}</p>
+                  <p class="nav-menu-id">UID: {{ user.id }}</p>
+                </div>
+              </div>
+              <div class="nav-menu-divider"></div>
+              <router-link :to="`/user/${user.id}`" class="nav-menu-item" @click="menuVisible = false">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span>我的帖子</span>
+              </router-link>
+              <router-link :to="`/user/${user.id}?tab=favorites`" class="nav-menu-item" @click="menuVisible = false">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                <span>我的收藏</span>
+              </router-link>
+              <router-link to="/messages" class="nav-menu-item" @click="menuVisible = false">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>我的私信</span>
+                <span v-if="unreadCount > 0" class="nav-menu-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+              </router-link>
+              <router-link to="/groups" class="nav-menu-item" @click="menuVisible = false">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>我的群聊</span>
+              </router-link>
+              <div class="nav-menu-divider"></div>
+              <button class="nav-menu-logout" @click="logout">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>退出登录</span>
+              </button>
             </div>
-            <router-link :to="`/user/${user.id}`" class="nav-menu-item">我的帖子</router-link>
-            <router-link :to="`/user/${user.id}?tab=favorites`" class="nav-menu-item">我的收藏</router-link>
-            <router-link to="/messages" class="nav-menu-item">
-              我的私信
-              <span v-if="unreadCount > 0" class="nav-menu-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
-            </router-link>
-            <router-link to="/groups" class="nav-menu-item">我的群聊</router-link>
-            <button class="nav-menu-logout" @click="logout">退出登录</button>
-          </div>
+          </Transition>
         </div>
 
         <div v-else class="nav-auth">
-          <router-link to="/login" class="ui-button ui-button-secondary">登录</router-link>
+          <router-link to="/login" class="ui-button ui-button-ghost">登录</router-link>
           <router-link to="/register" class="ui-button ui-button-primary">注册</router-link>
         </div>
       </div>
@@ -123,10 +191,12 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   height: 72px;
-  border-bottom: 1px solid #d2dae5;
-  background-color: #ffffff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-  z-index: 1000;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+  z-index: var(--z-fixed);
 }
 
 .nav-container {
@@ -141,35 +211,62 @@ onUnmounted(() => {
 }
 
 .nav-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--text-lg);
   font-weight: 700;
-  color: var(--color-text-main);
-  letter-spacing: 1px;
-  padding: 6px 10px;
-  border-radius: var(--radius-md);
-}
-
-.nav-links {
-  display: flex;
-  gap: var(--space-4);
-}
-
-.nav-link {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  padding: 8px 12px;
+  color: var(--color-text);
+  text-decoration: none;
+  padding: var(--space-2);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
 }
 
-.nav-link:hover,
+.nav-logo:hover {
+  background: var(--color-bg-soft);
+}
+
+.nav-logo-icon {
+  font-size: 24px;
+}
+
+.nav-logo-text {
+  background: var(--color-primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-links {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
 .nav-link.router-link-active {
   color: var(--color-primary);
-  background-color: var(--color-primary-soft);
+  background: var(--color-primary-soft);
 }
 
 .nav-actions {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -178,131 +275,240 @@ onUnmounted(() => {
 .nav-search {
   display: flex;
   align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  height: 42px;
-  background-color: #ffffff;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  position: relative;
+  background: var(--color-bg-soft);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  height: 44px;
+  transition: all var(--transition-fast);
 }
 
 .nav-search:focus-within {
+  background: white;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  box-shadow: var(--shadow-focus);
+}
+
+.nav-search-icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--color-text-muted);
+  pointer-events: none;
 }
 
 .nav-search-input {
-  width: 220px;
+  width: 200px;
+  height: 100%;
   border: none;
-  padding: 0 var(--space-3);
-  color: var(--color-text-main);
+  background: transparent;
+  padding: 0 var(--space-10) 0 var(--space-10);
+  font-size: var(--text-sm);
+  color: var(--color-text);
 }
 
 .nav-search-input:focus {
   outline: none;
 }
 
+.nav-search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
 .nav-search-button {
-  height: 100%;
-  border: none;
-  border-left: 1px solid var(--color-border);
-  background-color: var(--color-bg-soft);
+  position: absolute;
+  right: var(--space-1);
+  height: 32px;
   padding: 0 var(--space-3);
-  color: var(--color-text-secondary);
+  background: var(--color-primary-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
 .nav-search-button:hover {
-  background-color: #eef2f7;
+  box-shadow: var(--shadow-primary);
 }
 
 .nav-create-btn {
-  white-space: nowrap;
+  gap: var(--space-2);
 }
 
 .nav-user {
   position: relative;
 }
 
-.nav-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  object-fit: cover;
-  border: 1px solid var(--color-border);
+.nav-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
-.nav-avatar:hover {
-  transform: translateY(-1px) scale(1.03);
-  box-shadow: var(--shadow-sm);
+.nav-user-trigger:hover {
+  background: var(--color-bg-soft);
+  border-color: var(--color-border);
+}
+
+.nav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 2px solid var(--color-border-light);
+}
+
+.nav-user-name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-user-arrow {
+  color: var(--color-text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.nav-user-arrow.rotated {
+  transform: rotate(180deg);
 }
 
 .nav-menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   right: 0;
-  min-width: 200px;
-  background-color: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  min-width: 240px;
+  background: white;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
   overflow: hidden;
 }
 
-.nav-menu-user {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+.nav-menu-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: linear-gradient(135deg, var(--color-primary-soft) 0%, var(--color-bg-soft) 100%);
+}
+
+.nav-menu-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-menu-user-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .nav-menu-name {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
 }
 
 .nav-menu-id {
-  margin-top: var(--space-1);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+  margin: var(--space-1) 0 0;
 }
 
-.nav-menu-item,
-.nav-menu-logout {
-  width: 100%;
-  display: block;
-  text-align: left;
-  border: none;
-  background: none;
+.nav-menu-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 0 var(--space-4);
+}
+
+.nav-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: all var(--transition-fast);
 }
 
-.nav-menu-item:hover,
-.nav-menu-logout:hover {
-  background-color: var(--color-bg-soft);
-  color: var(--color-text-main);
+.nav-menu-item:hover {
+  background: var(--color-bg-soft);
+  color: var(--color-text);
+}
+
+.nav-menu-item svg {
+  color: var(--color-text-muted);
+}
+
+.nav-menu-item:hover svg {
+  color: var(--color-primary);
 }
 
 .nav-menu-badge {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-2);
   font-size: 11px;
   font-weight: 600;
-  color: #fff;
-  background-color: #ef4444;
-  border-radius: 999px;
-  margin-left: 6px;
+  color: white;
+  background: var(--color-error);
+  border-radius: var(--radius-full);
+}
+
+.nav-menu-logout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-error);
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.nav-menu-logout:hover {
+  background: var(--color-error-soft);
 }
 
 .nav-auth {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all var(--transition-fast);
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 @media (max-width: 960px) {
@@ -320,7 +526,11 @@ onUnmounted(() => {
     padding: 0 var(--space-4);
   }
 
-  .nav-create-btn {
+  .nav-create-btn span {
+    display: none;
+  }
+
+  .nav-user-name {
     display: none;
   }
 }

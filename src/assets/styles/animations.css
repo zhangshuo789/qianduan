@@ -1,37 +1,133 @@
-/* 页面淡入 */
-.page-enter-active,
-.page-leave-active {
-  transition: opacity var(--transition-normal);
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.page-enter-from,
-.page-leave-to {
-  opacity: 0;
-}
-
-/* 卡片悬停动画 */
-@keyframes cardHover {
+@keyframes fadeInUp {
   from {
-    transform: translateY(0);
-    box-shadow: var(--shadow-md);
+    opacity: 0;
+    transform: translateY(16px);
   }
   to {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* 按钮点击反馈 */
-@keyframes buttonPress {
-  0% { transform: scale(1); }
-  50% { transform: scale(0.97); }
-  100% { transform: scale(1); }
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* 加载旋转 */
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(-8px);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px var(--color-primary-soft); }
+  50% { box-shadow: 0 0 20px var(--color-primary-soft), 0 0 30px var(--color-primary-soft); }
+}
+
+.animate-fade-in { animation: fadeIn var(--transition-normal) ease-out; }
+.animate-fade-in-up { animation: fadeInUp var(--transition-normal) ease-out; }
+.animate-fade-in-down { animation: fadeInDown var(--transition-normal) ease-out; }
+.animate-fade-in-left { animation: fadeInLeft var(--transition-normal) ease-out; }
+.animate-fade-in-right { animation: fadeInRight var(--transition-normal) ease-out; }
+.animate-scale-in { animation: scaleIn var(--transition-normal) ease-out; }
+.animate-slide-down { animation: slideDown var(--transition-fast) ease-out; }
+.animate-slide-up { animation: slideUp var(--transition-fast) ease-out; }
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+.animate-bounce { animation: bounce 1s infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-glow { animation: glow 2s ease-in-out infinite; }
 
 .spinner {
   width: 20px;
@@ -42,37 +138,66 @@
   animation: spin 0.8s linear infinite;
 }
 
-/* 下拉展开 */
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: max-height var(--transition-normal), opacity var(--transition-normal);
-  overflow: hidden;
+.spinner-lg {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
 }
 
-.dropdown-enter-from,
-.dropdown-leave-to {
-  max-height: 0;
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-soft) 25%,
+    var(--color-border-light) 50%,
+    var(--color-bg-soft) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity var(--transition-normal);
+}
+
+.page-enter-from,
+.page-leave-to {
   opacity: 0;
 }
 
-.dropdown-enter-to,
-.dropdown-leave-from {
-  max-height: var(--dropdown-max-height, 500px);
-  opacity: 1;
+.ui-pop-in {
+  animation: fadeInDown var(--transition-fast) ease-out;
 }
 
-/* 淡入上移 */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.card-hover {
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
 
-.fade-in-up {
-  animation: fadeInUp var(--transition-normal) ease-out;
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+.link-underline {
+  position: relative;
+}
+
+.link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-primary);
+  transition: width var(--transition-fast);
+}
+
+.link-underline:hover::after {
+  width: 100%;
 }
