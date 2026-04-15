@@ -56,15 +56,15 @@
               <div class="user-name">{{ user.nickname }}</div>
               <div class="user-stats">
                 <div class="stat-item">
-                  <span class="stat-value">0</span>
+                  <span class="stat-value">{{ stats.postCount || 0 }}</span>
                   <span class="stat-label">文章</span>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-value">0</span>
+                  <span class="stat-value">{{ stats.followCount || 0 }}</span>
                   <span class="stat-label">关注</span>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-value">0</span>
+                  <span class="stat-value">{{ stats.followerCount || 0 }}</span>
                   <span class="stat-label">粉丝</span>
                 </div>
               </div>
@@ -166,13 +166,14 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { board, getUser, getAvatarUrl } from '@/api'
+import { board, user as userApi, getUser, getAvatarUrl } from '@/api'
 
 const boards = ref([])
 const loading = ref(true)
 const user = ref(getUser())
 const defaultAvatar = 'https://via.placeholder.com/40'
 const displayAvatar = ref(defaultAvatar)
+const stats = ref({ postCount: 0, followCount: 0, followerCount: 0 })
 
 async function updateDisplayAvatar() {
   if (user.value?.avatar) {
@@ -183,7 +184,25 @@ async function updateDisplayAvatar() {
   }
 }
 
+async function loadStats() {
+  if (user.value) {
+    try {
+      const res = await userApi.getStats(user.value.id)
+      stats.value = res.data
+    } catch (e) {
+      console.error(e)
+    }
+  }
+}
+
 watch(user, updateDisplayAvatar, { immediate: true })
+watch(user, (newUser) => {
+  if (newUser) {
+    loadStats()
+  } else {
+    stats.value = { postCount: 0, followCount: 0, followerCount: 0 }
+  }
+}, { immediate: true })
 
 onMounted(async () => {
   try {
