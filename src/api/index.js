@@ -249,23 +249,34 @@ export function connectSSE(onMessage, onGroupMessage) {
   const token = localStorage.getItem('token')
   if (!token) return null
 
-  eventSource = new EventSource(`/api/sse/connect?token=${encodeURIComponent(token)}`)
+  try {
+    eventSource = new EventSource(`/api/sse/connect?token=${encodeURIComponent(token)}`)
 
-  eventSource.addEventListener('newMessage', (e) => {
-    try {
-      onMessage(JSON.parse(e.data))
-    } catch (err) {
-      console.error('SSE message parse error:', err)
+    eventSource.onerror = () => {
+      // SSE 连接失败时静默关闭，避免持续报错
+      console.warn('SSE 连接失败，已断开')
+      disconnectSSE()
     }
-  })
 
-  eventSource.addEventListener('newGroupMessage', (e) => {
-    try {
-      onGroupMessage(JSON.parse(e.data))
-    } catch (err) {
-      console.error('SSE group message parse error:', err)
-    }
-  })
+    eventSource.addEventListener('newMessage', (e) => {
+      try {
+        onMessage(JSON.parse(e.data))
+      } catch (err) {
+        console.error('SSE message parse error:', err)
+      }
+    })
+
+    eventSource.addEventListener('newGroupMessage', (e) => {
+      try {
+        onGroupMessage(JSON.parse(e.data))
+      } catch (err) {
+        console.error('SSE group message parse error:', err)
+      }
+    })
+  } catch (e) {
+    console.warn('SSE 连接异常:', e)
+    return null
+  }
 
   return eventSource
 }
