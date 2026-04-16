@@ -250,7 +250,8 @@ export function connectSSE(onMessage, onGroupMessage) {
   if (!token) return null
 
   try {
-    eventSource = new EventSource(`/api/sse/connect?token=${encodeURIComponent(token)}`)
+    // EventSource 不支持 Header，只能用 Query 参数
+    eventSource = new EventSource(`http://localhost:8080/api/sse/connect?token=${encodeURIComponent(token)}`)
 
     eventSource.onerror = () => {
       // SSE 连接失败时静默关闭，避免持续报错
