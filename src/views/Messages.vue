@@ -14,8 +14,8 @@
       <section v-else class="messages-list">
         <router-link
           v-for="conv in conversations"
-          :key="conv.userId"
-          :to="`/chat/${conv.userId}`"
+          :key="conv.oderId"
+          :to="`/chat/${conv.oderId}`"
           class="message-item ui-card"
         >
           <img :src="conv.processedAvatar || defaultAvatar" class="message-avatar" alt="头像" />
@@ -65,13 +65,8 @@ async function loadConversations() {
   loading.value = true
   try {
     const res = await messageApi.getConversations()
-    console.log('conversations response:', res)
-    console.log('conversations data:', res.data)
     conversations.value = res.data?.content || []
-    console.log('conversations list:', conversations.value)
-    // 处理头像
     for (const conv of conversations.value) {
-      console.log('conv:', conv, 'userId:', conv.userId)
       if (conv.userAvatar) {
         conv.processedAvatar = await getAvatarUrl(conv.userAvatar) || defaultAvatar
       } else {
