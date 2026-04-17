@@ -67,6 +67,10 @@ const chatUser = ref(null)
 
 const chatUserId = computed(() => route.params.userId)
 
+function isValidUserId(id) {
+  return id && id !== 'undefined' && id !== 'null'
+}
+
 function formatTime(d) {
   if (!d) return ''
   const date = new Date(d)
@@ -74,6 +78,7 @@ function formatTime(d) {
 }
 
 async function loadChatUser() {
+  if (!isValidUserId(chatUserId.value)) return
   try {
     const res = await userApi.getInfo(chatUserId.value)
     chatUser.value = res.data
@@ -88,6 +93,7 @@ async function loadChatUser() {
 }
 
 async function loadMessages() {
+  if (!isValidUserId(chatUserId.value)) return
   loading.value = true
   try {
     const res = await messageApi.getPrivateMessages(chatUserId.value)
@@ -144,7 +150,7 @@ function handleNewMessage(data) {
 }
 
 onMounted(() => {
-  if (!chatUserId.value) return
+  if (!isValidUserId(chatUserId.value)) return
   const user = getUser()
   currentUserId.value = user?.id
   loadChatUser()
