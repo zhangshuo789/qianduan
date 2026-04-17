@@ -144,6 +144,7 @@ function handleNewMessage(data) {
 }
 
 onMounted(() => {
+  if (!chatUserId.value) return
   const user = getUser()
   currentUserId.value = user?.id
   loadChatUser()

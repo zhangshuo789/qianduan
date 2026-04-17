@@ -185,7 +185,7 @@ async function updateDisplayAvatar() {
 }
 
 async function loadStats() {
-  if (user.value) {
+  if (user.value?.id) {
     try {
       const res = await userApi.getStats(user.value.id)
       stats.value = res.data
