@@ -46,7 +46,7 @@
             </svg>
             {{ isFollowing ? '已关注' : '关注' }}
           </button>
-          <router-link v-if="!isSelf" :to="`/chat/${route.params.id}`" class="btn-message">
+          <router-link v-if="!isSelf && userInfo" :to="`/chat/${userInfo.id}`" class="btn-message">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
