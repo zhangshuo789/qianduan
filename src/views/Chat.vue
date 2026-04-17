@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message as messageApi, user as userApi, getAvatarUrl, getUser } from '@/api'
 
@@ -78,9 +78,12 @@ function formatTime(d) {
 }
 
 async function loadChatUser() {
+  console.log('loadChatUser called, chatUserId:', chatUserId.value, 'valid:', isValidUserId(chatUserId.value))
   if (!isValidUserId(chatUserId.value)) return
   try {
+    console.log('fetching user info for:', chatUserId.value)
     const res = await userApi.getInfo(chatUserId.value)
+    console.log('user info response:', res)
     chatUser.value = res.data
     if (chatUser.value.avatar) {
       chatUser.value.processedAvatar = await getAvatarUrl(chatUser.value.avatar) || defaultAvatar
@@ -88,15 +91,18 @@ async function loadChatUser() {
       chatUser.value.processedAvatar = defaultAvatar
     }
   } catch (e) {
-    console.error(e)
+    console.error('loadChatUser error:', e)
   }
 }
 
 async function loadMessages() {
+  console.log('loadMessages called, chatUserId:', chatUserId.value, 'valid:', isValidUserId(chatUserId.value))
   if (!isValidUserId(chatUserId.value)) return
   loading.value = true
   try {
+    console.log('fetching messages for:', chatUserId.value)
     const res = await messageApi.getPrivateMessages(chatUserId.value)
+    console.log('messages response:', res)
     messages.value = res.data?.content || []
     // 滚动到底部
     await nextTick()
@@ -108,7 +114,7 @@ async function loadMessages() {
       console.error(e)
     }
   } catch (e) {
-    console.error(e)
+    console.error('loadMessages error:', e)
   } finally {
     loading.value = false
   }
@@ -150,12 +156,23 @@ function handleNewMessage(data) {
 }
 
 onMounted(() => {
+  console.log('Chat onMounted, route.params:', route.params, 'chatUserId:', chatUserId.value)
   if (!isValidUserId(chatUserId.value)) return
   const user = getUser()
   currentUserId.value = user?.id
   loadChatUser()
   loadMessages()
   window.addEventListener('sse:newMessage', handleNewMessage)
+})
+
+watch(() => route.params.userId, (newId) => {
+  console.log('route.params.userId changed to:', newId)
+  if (isValidUserId(newId)) {
+    messages.value = []
+    chatUser.value = null
+    loadChatUser()
+    loadMessages()
+  }
 })
 
 onUnmounted(() => {
