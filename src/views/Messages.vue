@@ -1,36 +1,75 @@
 <template>
-  <div class="messages-page ui-page">
+  <div class="messages-page">
     <div class="messages-container">
-      <header class="messages-header ui-card ui-pop-in">
-        <h1 class="messages-title">我的私信</h1>
-      </header>
+      <div class="messages-header">
+        <div class="header-content">
+          <div class="header-icon">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div class="header-info">
+            <h1 class="header-title">私信</h1>
+            <p class="header-subtitle">{{ conversations.length }} 个对话</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn" @click="loadConversations">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+          </button>
+        </div>
+      </div>
 
-      <section v-if="loading" class="ui-card ui-loading">加载中...</section>
+      <div v-if="loading" class="loading-state">
+        <div class="spinner spinner-lg"></div>
+        <span>加载中...</span>
+      </div>
 
-      <section v-else-if="conversations.length === 0" class="ui-card ui-empty">
-        暂无私信
-      </section>
+      <div v-else-if="conversations.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h3>暂无私信</h3>
+        <p>开始与其他用户交流吧</p>
+      </div>
 
-      <section v-else class="messages-list">
+      <div v-else class="conversations-list">
         <router-link
-          v-for="conv in conversations"
+          v-for="(conv, index) in conversations"
           :key="conv.oderId"
           :to="`/chat/${conv.oderId}`"
-          class="message-item ui-card"
+          class="conversation-item animate-fade-in-up"
+          :style="{ animationDelay: `${index * 50}ms` }"
         >
-          <img :src="conv.processedAvatar || defaultAvatar" class="message-avatar" alt="头像" />
-          <div class="message-info">
-            <div class="message-header">
-              <span class="message-nickname">{{ conv.userNickname }}</span>
-              <span class="message-time">{{ formatDate(conv.lastMessageTime) }}</span>
+          <div class="avatar-wrapper">
+            <img :src="conv.processedAvatar || defaultAvatar" class="conversation-avatar" alt="头像" />
+            <div v-if="conv.online" class="online-indicator"></div>
+          </div>
+          <div class="conversation-info">
+            <div class="conversation-header">
+              <span class="conversation-name">{{ conv.oderNickname }}</span>
+              <span class="conversation-time">{{ formatDate(conv.lastMessageTime) }}</span>
             </div>
-            <div class="message-preview">
-              <span class="message-content">{{ conv.lastMessage }}</span>
-              <span v-if="conv.unreadCount > 0" class="message-unread">{{ conv.unreadCount }}</span>
+            <div class="conversation-preview">
+              <span class="preview-text">{{ conv.lastMessage }}</span>
+              <span v-if="conv.unreadCount > 0" class="unread-badge">
+                {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
+              </span>
             </div>
           </div>
+          <div class="conversation-arrow">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
         </router-link>
-      </section>
+      </div>
     </div>
   </div>
 </template>
@@ -67,8 +106,8 @@ async function loadConversations() {
     const res = await messageApi.getConversations()
     conversations.value = res.data?.content || []
     for (const conv of conversations.value) {
-      if (conv.userAvatar) {
-        conv.processedAvatar = await getAvatarUrl(conv.userAvatar) || defaultAvatar
+      if (conv.oderAvatar) {
+        conv.processedAvatar = await getAvatarUrl(conv.oderAvatar) || defaultAvatar
       } else {
         conv.processedAvatar = defaultAvatar
       }
@@ -88,86 +127,216 @@ onMounted(() => {
 <style scoped>
 .messages-page {
   min-height: calc(100vh - 72px);
-  padding: var(--space-6);
+  background: var(--color-bg-soft);
 }
 
 .messages-container {
   max-width: 800px;
   margin: 0 auto;
+  padding: var(--space-lg);
 }
 
 .messages-header {
-  padding: var(--space-5);
-  border-radius: var(--radius-xl);
-  margin-bottom: var(--space-4);
-}
-
-.messages-title {
-  font-size: var(--text-lg);
-  font-weight: 700;
-}
-
-.messages-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.message-item {
+  background: var(--color-card);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-xl);
-  transition: all var(--transition-fast);
-  text-decoration: none;
-  color: inherit;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
 }
 
-.message-item:hover {
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.header-icon {
+  width: 56px;
+  height: 56px;
+  background: var(--color-primary-gradient);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.header-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.action-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  background: var(--color-card);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
+}
+
+.loading-state span {
+  margin-top: var(--space-md);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  background: var(--color-card);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
+  text-align: center;
+}
+
+.empty-icon {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+.empty-state h3 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+
+.empty-state p {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.conversations-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--color-card);
+  border-radius: var(--radius-xl);
+  text-decoration: none;
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.conversation-item:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-light);
+  text-decoration: none;
 }
 
-.message-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 999px;
-  object-fit: cover;
-  border: 1px solid var(--color-border);
+.avatar-wrapper {
+  position: relative;
   flex-shrink: 0;
 }
 
-.message-info {
+.conversation-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 2px solid var(--color-border-light);
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--color-success);
+  border: 2px solid var(--color-card);
+  border-radius: var(--radius-full);
+}
+
+.conversation-info {
   flex: 1;
   min-width: 0;
 }
 
-.message-header {
+.conversation-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--space-1);
 }
 
-.message-nickname {
+.conversation-name {
   font-size: var(--text-base);
   font-weight: 600;
+  color: var(--color-text);
 }
 
-.message-time {
+.conversation-time {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
-.message-preview {
+.conversation-preview {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-top: var(--space-1);
+  gap: var(--space-2);
 }
 
-.message-content {
+.preview-text {
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
   overflow: hidden;
@@ -176,19 +345,48 @@ onMounted(() => {
   flex: 1;
 }
 
-.message-unread {
+.unread-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  font-size: 12px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
   font-weight: 600;
-  color: #fff;
-  background-color: #ef4444;
-  border-radius: 999px;
-  margin-left: var(--space-2);
+  color: white;
+  background: var(--color-error);
+  border-radius: var(--radius-full);
   flex-shrink: 0;
+}
+
+.conversation-arrow {
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+.conversation-item:hover .conversation-arrow {
+  color: var(--color-primary);
+  transform: translateX(4px);
+}
+
+@media (max-width: 640px) {
+  .messages-container {
+    padding: var(--space-md);
+  }
+
+  .messages-header {
+    padding: var(--space-md);
+  }
+
+  .header-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .conversation-avatar {
+    width: 48px;
+    height: 48px;
+  }
 }
 </style>
