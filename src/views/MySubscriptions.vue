@@ -92,6 +92,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { event as eventApi, getUser } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const user = getUser()
 const loading = ref(true)
@@ -139,7 +140,7 @@ async function handleUnsubscribe(eventId) {
     subscriptions.value = subscriptions.value.filter(s => s.id !== eventId)
   } catch (e) {
     console.error(e)
-    alert(e.message || '取消订阅失败')
+    toastBus.error(e.message || '取消订阅失败')
   } finally {
     unsubbing.value = null
   }

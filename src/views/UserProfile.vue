@@ -446,6 +446,7 @@
 import { ref, computed, onMounted, watch, h } from 'vue'
 import { useRoute } from 'vue-router'
 import { user as userApi, follow as followApi, getUser, getAvatarUrl } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const route = useRoute()
 const userInfo = ref(null)
@@ -618,7 +619,7 @@ async function loadFollowStatus() {
 
 async function toggleFollow() {
   if (!user) {
-    alert('请先登录')
+    toastBus.warning('请先登录')
     return
   }
   followLoading.value = true
@@ -632,7 +633,7 @@ async function toggleFollow() {
     }
     loadStats()
   } catch (e) {
-    alert(e.message)
+    toastBus.error(e.message)
   } finally {
     followLoading.value = false
   }

@@ -208,6 +208,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { event as eventApi, report as reportApi, getUser } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const route = useRoute()
 const router = useRouter()
@@ -275,7 +276,7 @@ async function handleSubscribe() {
     event.value.subscriberCount = (event.value.subscriberCount || 0) + 1
   } catch (e) {
     console.error(e)
-    alert(e.message || '订阅失败')
+    toastBus.error(e.message || '订阅失败')
   } finally {
     subscribing.value = false
   }
@@ -289,7 +290,7 @@ async function handleUnsubscribe() {
     event.value.subscriberCount = Math.max(0, (event.value.subscriberCount || 1) - 1)
   } catch (e) {
     console.error(e)
-    alert(e.message || '取消订阅失败')
+    toastBus.error(e.message || '取消订阅失败')
   } finally {
     subscribing.value = false
   }
@@ -299,12 +300,12 @@ async function handleRegister() {
   registering.value = true
   try {
     await eventApi.register(event.value.id, registerForm.value)
-    alert('报名成功，等待审核！')
+    toastBus.success('报名成功，等待审核！')
     showRegisterModal.value = false
     loadEvent()
   } catch (e) {
     console.error(e)
-    alert(e.message || '报名失败')
+    toastBus.error(e.message || '报名失败')
   } finally {
     registering.value = false
   }
@@ -312,7 +313,7 @@ async function handleRegister() {
 
 async function submitReport() {
   if (!reportReason.value) {
-    alert('请选择举报原因')
+    toastBus.warning('请选择举报原因')
     return
   }
   try {
@@ -322,13 +323,13 @@ async function submitReport() {
       reason: reportReason.value,
       detail: reportDetail.value
     })
-    alert('举报成功，我们会尽快处理')
+    toastBus.success('举报成功，我们会尽快处理')
     showReportModal.value = false
     reportReason.value = ''
     reportDetail.value = ''
   } catch (e) {
     console.error(e)
-    alert(e.message || '举报失败')
+    toastBus.error(e.message || '举报失败')
   }
 }
 

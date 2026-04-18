@@ -123,6 +123,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message as messageApi, user as userApi, getAvatarUrl, getUser } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const route = useRoute()
 const router = useRouter()
@@ -253,7 +254,7 @@ async function sendMessage() {
     await nextTick()
     scrollToBottom()
   } catch (e) {
-    alert(e.message)
+    toastBus.error(e.message)
     newMessage.value = content
   } finally {
     sending.value = false

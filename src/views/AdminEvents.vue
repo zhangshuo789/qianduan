@@ -55,6 +55,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { admin } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const events = ref([])
 const page = ref(0)
@@ -75,10 +76,10 @@ async function changeStatus(e, newStatus) {
   if (newStatus === e.status) return
   try {
     await admin.updateEventStatus(e.id, newStatus)
-    alert('状态已更新')
+    toastBus.success('状态已更新')
     loadEvents()
   } catch (err) {
-    alert(err.message || '更新失败')
+    toastBus.error(err.message || '更新失败')
   }
 }
 

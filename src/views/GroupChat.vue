@@ -83,6 +83,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { group as groupApi, getAvatarUrl, getUser } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const route = useRoute()
 const router = useRouter()
@@ -173,7 +174,7 @@ async function sendMessage() {
     await nextTick()
     scrollToBottom()
   } catch (e) {
-    alert(e.message)
+    toastBus.error(e.message)
     newMessage.value = content
   } finally {
     sending.value = false
@@ -185,7 +186,7 @@ async function removeMember(userId) {
     await groupApi.removeMember(groupId.value, userId)
     members.value = members.value.filter(m => m.id !== userId)
   } catch (e) {
-    alert(e.message)
+    toastBus.error(e.message)
   }
 }
 

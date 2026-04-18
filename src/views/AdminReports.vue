@@ -62,6 +62,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { admin } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const reports = ref([])
 const page = ref(0)
@@ -87,10 +88,10 @@ async function handleReport(r, approved) {
   const result = approved ? '已通过' : '已驳回'
   try {
     await admin.handleReport(r.id, approved, result)
-    alert('处理成功')
+    toastBus.success('处理成功')
     loadReports()
   } catch (e) {
-    alert(e.message || '操作失败')
+    toastBus.error(e.message || '操作失败')
   }
 }
 

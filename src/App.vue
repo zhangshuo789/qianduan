@@ -4,12 +4,14 @@
     <main class="app-main">
       <router-view />
     </main>
+    <Toast />
   </div>
 </template>
 
 <script setup>
 import { onUnmounted, provide, watch } from 'vue'
 import NavBar from '@/components/NavBar.vue'
+import Toast from '@/components/Toast.vue'
 import { connectSSE, disconnectSSE, useUser } from '@/api'
 
 const user = useUser()

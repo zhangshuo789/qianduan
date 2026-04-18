@@ -270,6 +270,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { post as postApi, comment as commentApi, report as reportApi, getUser, getAvatarUrl } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const route = useRoute()
 const router = useRouter()
@@ -373,7 +374,7 @@ async function handleLike() {
       post.value.likeCount = (post.value.likeCount || 0) + 1
     }
   } catch (e) {
-    alert(e.message)
+    toastBus.error(e.message)
   }
 }
 
@@ -393,7 +394,7 @@ async function handleFavorite() {
       post.value.favoriteCount = (post.value.favoriteCount || 0) + 1
     }
   } catch (e) {
-    alert(e.message)
+    toastBus.error(e.message)
   }
 }
 
@@ -403,7 +404,7 @@ async function handleDelete() {
     await postApi.delete(route.params.id)
     router.push('/')
   } catch (e) {
-    alert(e.message)
+    toastBus.error(e.message)
   }
 }
 
@@ -438,7 +439,7 @@ async function submitComment() {
     loadComments(0)
     post.value.commentCount = (post.value.commentCount || 0) + 1
   } catch (e) {
-    alert(e.message)
+    toastBus.error(e.message)
   } finally {
     submitting.value = false
   }
@@ -465,13 +466,13 @@ async function deleteComment(id) {
     loadComments(commentPage.value)
     post.value.commentCount = Math.max((post.value.commentCount || 1) - 1, 0)
   } catch (e) {
-    alert(e.message)
+    toastBus.error(e.message)
   }
 }
 
 async function submitReport() {
   if (!reportReason.value) {
-    alert('请选择举报原因')
+    toastBus.warning('请选择举报原因')
     return
   }
   try {
@@ -480,12 +481,12 @@ async function submitReport() {
       targetId: post.value.id,
       reason: reportReason.value + (reportDetail.value ? ': ' + reportDetail.value : '')
     })
-    alert('举报成功，我们会尽快处理')
+    toastBus.success('举报成功，我们会尽快处理')
     showReportModal.value = false
     reportReason.value = ''
     reportDetail.value = ''
   } catch (e) {
-    alert(e.message || '举报失败')
+    toastBus.error(e.message || '举报失败')
   }
 }
 

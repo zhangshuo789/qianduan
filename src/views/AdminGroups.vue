@@ -43,6 +43,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { admin } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const groups = ref([])
 const page = ref(0)
@@ -63,10 +64,10 @@ async function dissolveGroup(g) {
   if (!confirm(`确定要解散群聊"${g.name}"吗？此操作不可恢复。`)) return
   try {
     await admin.dissolveGroup(g.id)
-    alert('群聊已解散')
+    toastBus.success('群聊已解散')
     loadGroups()
   } catch (err) {
-    alert(err.message || '操作失败')
+    toastBus.error(err.message || '操作失败')
   }
 }
 

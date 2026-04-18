@@ -64,6 +64,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { admin } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const users = ref([])
 const page = ref(0)
@@ -94,20 +95,20 @@ async function disableUser(u) {
   if (!reason) return
   try {
     await admin.setUserStatus(u.id, true, reason)
-    alert('已禁用该用户')
+    toastBus.success('已禁用该用户')
     loadUsers()
   } catch (e) {
-    alert(e.message || '操作失败')
+    toastBus.error(e.message || '操作失败')
   }
 }
 
 async function enableUser(u) {
   try {
     await admin.setUserStatus(u.id, false, '')
-    alert('已启用该用户')
+    toastBus.success('已启用该用户')
     loadUsers()
   } catch (e) {
-    alert(e.message || '操作失败')
+    toastBus.error(e.message || '操作失败')
   }
 }
 

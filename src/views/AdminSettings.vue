@@ -95,6 +95,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { admin } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const boards = ref([])
 const words = ref([])
@@ -123,17 +124,17 @@ async function loadWords() {
 
 async function createBoard() {
   if (!boardForm.value.name) {
-    alert('请输入板块名称')
+    toastBus.warning('请输入板块名称')
     return
   }
   try {
     await admin.createBoard(boardForm.value)
-    alert('添加成功')
+    toastBus.success('添加成功')
     showBoardModal.value = false
     boardForm.value = { name: '', description: '' }
     loadBoards()
   } catch (e) {
-    alert(e.message || '添加失败')
+    toastBus.error(e.message || '添加失败')
   }
 }
 
@@ -141,26 +142,26 @@ async function deleteBoard(b) {
   if (!confirm(`确定删除板块"${b.name}"吗？`)) return
   try {
     await admin.deleteBoard(b.id)
-    alert('删除成功')
+    toastBus.success('删除成功')
     loadBoards()
   } catch (e) {
-    alert(e.message || '删除失败')
+    toastBus.error(e.message || '删除失败')
   }
 }
 
 async function createWord() {
   if (!wordForm.value.word) {
-    alert('请输入敏感词')
+    toastBus.warning('请输入敏感词')
     return
   }
   try {
     await admin.addSensitiveWord(wordForm.value)
-    alert('添加成功')
+    toastBus.success('添加成功')
     showWordModal.value = false
     wordForm.value = { word: '' }
     loadWords()
   } catch (e) {
-    alert(e.message || '添加失败')
+    toastBus.error(e.message || '添加失败')
   }
 }
 
@@ -168,10 +169,10 @@ async function deleteWord(w) {
   if (!confirm(`确定删除敏感词"${w.word}"吗？`)) return
   try {
     await admin.deleteSensitiveWord(w.id)
-    alert('删除成功')
+    toastBus.success('删除成功')
     loadWords()
   } catch (e) {
-    alert(e.message || '删除失败')
+    toastBus.error(e.message || '删除失败')
   }
 }
 
