@@ -11,6 +11,9 @@ import Messages from '@/views/Messages.vue'
 import Chat from '@/views/Chat.vue'
 import Groups from '@/views/Groups.vue'
 import GroupChat from '@/views/GroupChat.vue'
+import Events from '@/views/Events.vue'
+import EventDetail from '@/views/EventDetail.vue'
+import MySubscriptions from '@/views/MySubscriptions.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -25,7 +28,10 @@ const routes = [
   { path: '/messages', name: 'Messages', component: Messages },
   { path: '/chat/:userId', name: 'Chat', component: Chat },
   { path: '/groups', name: 'Groups', component: Groups },
-  { path: '/group/:id', name: 'GroupChat', component: GroupChat }
+  { path: '/group/:id', name: 'GroupChat', component: GroupChat },
+  { path: '/events', name: 'Events', component: Events },
+  { path: '/event/:id', name: 'EventDetail', component: EventDetail },
+  { path: '/my-subscriptions', name: 'MySubscriptions', component: MySubscriptions }
 ]
 
 const router = createRouter({

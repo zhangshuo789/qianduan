@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { message as messageApi, getAvatarUrl, getUser } from '@/api'
 
 const loading = ref(true)
@@ -121,7 +121,30 @@ async function loadConversations() {
 
 onMounted(() => {
   loadConversations()
+  window.addEventListener('sse:newMessage', handleNewMessage)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('sse:newMessage', handleNewMessage)
+})
+
+function handleNewMessage(event) {
+  const data = event.detail
+  console.log('Messages SSE newMessage:', data)
+  // 找到对应的会话，更新最新消息和未读数
+  const conv = conversations.value.find(c => c.oderId === data.senderId)
+  if (conv) {
+    conv.lastMessage = data.content
+    conv.lastMessageTime = data.createdAt
+    if (data.senderId !== data.targetId) {
+      conv.unreadCount = (conv.unreadCount || 0) + 1
+    }
+  }
+  // 将最新消息的会话移到顶部
+  conversations.value.sort((a, b) => {
+    return new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
+  })
+}
 </script>
 
 <style scoped>

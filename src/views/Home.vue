@@ -165,12 +165,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { board, user as userApi, getUser, getAvatarUrl } from '@/api'
+import { ref, onMounted, watch, computed } from 'vue'
+import { board, user as userApi, useUser, getAvatarUrl } from '@/api'
 
 const boards = ref([])
 const loading = ref(true)
-const user = ref(getUser())
+const userRef = useUser()
+const user = computed(() => userRef.value)
 const defaultAvatar = 'https://via.placeholder.com/40'
 const displayAvatar = ref(defaultAvatar)
 const stats = ref({ postCount: 0, followCount: 0, followerCount: 0 })

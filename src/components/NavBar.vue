@@ -14,6 +14,15 @@
           </svg>
           <span>首页</span>
         </router-link>
+        <router-link to="/events" class="nav-link">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>赛事</span>
+        </router-link>
         <router-link v-if="user" :to="`/user/${user.id}`" class="nav-link">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -89,6 +98,21 @@
                 </svg>
                 <span>我的群聊</span>
               </router-link>
+              <router-link to="/events" class="nav-menu-item" @click="menuVisible = false">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>赛事活动</span>
+              </router-link>
+              <router-link to="/my-subscriptions" class="nav-menu-item" @click="menuVisible = false">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                <span>我的订阅</span>
+              </router-link>
               <div class="nav-menu-divider"></div>
               <button class="nav-menu-logout" @click="logout">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
@@ -112,12 +136,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { getUser, clearAuth, getAvatarUrl, message as messageApi } from '@/api'
+import { useUser, clearAuth, getAvatarUrl, message as messageApi } from '@/api'
 
 const router = useRouter()
-const user = ref(getUser())
+const userRef = useUser()
+const user = computed(() => userRef.value)
 const keyword = ref('')
 const menuVisible = ref(false)
 const defaultAvatar = 'https://via.placeholder.com/40'
@@ -163,7 +188,6 @@ function handleSearch() {
 
 function logout() {
   clearAuth()
-  user.value = null
   unreadCount.value = 0
   menuVisible.value = false
   router.push('/')

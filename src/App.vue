@@ -8,34 +8,33 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, provide, ref } from 'vue'
+import { onUnmounted, provide, watch } from 'vue'
 import NavBar from '@/components/NavBar.vue'
-import { connectSSE, disconnectSSE, getUser, message as messageApi } from '@/api'
+import { connectSSE, disconnectSSE, useUser } from '@/api'
 
-const user = ref(getUser())
+const user = useUser()
 
-// 提供 SSE 事件处理
 function handleNewMessage(data) {
-  // 触发自定义事件，让 Chat 组件处理
+  console.log('SSE newMessage event:', data)
   window.dispatchEvent(new CustomEvent('sse:newMessage', { detail: data }))
 }
 
 function handleNewGroupMessage(data) {
-  // 触发自定义事件，让 GroupChat 组件处理
   window.dispatchEvent(new CustomEvent('sse:newGroupMessage', { detail: data }))
 }
 
-onMounted(() => {
-  if (user.value) {
+watch(user, (newUser) => {
+  if (newUser) {
     connectSSE(handleNewMessage, handleNewGroupMessage)
+  } else {
+    disconnectSSE()
   }
-})
+}, { immediate: true })
 
 onUnmounted(() => {
   disconnectSSE()
 })
 
-// 当用户登录后，连接 SSE
 provide('connectSSE', () => {
   if (user.value) {
     connectSSE(handleNewMessage, handleNewGroupMessage)
@@ -46,9 +45,7 @@ provide('disconnectSSE', () => {
   disconnectSSE()
 })
 
-// 提供更新未读数的方法
 provide('refreshUnread', async () => {
-  // NavBar 会自动处理
 })
 </script>
 

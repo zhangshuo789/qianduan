@@ -130,7 +130,7 @@
                   </div>
                   <p class="comment-text">{{ c.content }}</p>
                   <div class="comment-actions">
-                    <button v-if="user" @click="showReplyForm(c.id)" class="comment-reply-btn">
+                    <button v-if="user" @click="setReplyTo(c)" class="comment-reply-btn">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="9 17 4 12 9 7"/>
                         <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
@@ -153,11 +153,12 @@
                   <div class="reply-content">
                     <div class="reply-header-row">
                       <router-link :to="`/user/${reply.user.id}`" class="reply-author">{{ reply.user.nickname }}</router-link>
+                      <span v-if="reply.replyToName" class="reply-to">回复 <span class="reply-to-name">@{{ reply.replyToName }}</span></span>
                       <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
                     </div>
                     <p class="reply-text">{{ reply.content }}</p>
                     <div class="comment-actions">
-                      <button v-if="user" @click="showReplyForm(reply.id)" class="comment-reply-btn">
+                      <button v-if="user" @click="setReplyTo(reply)" class="comment-reply-btn">
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                           <polyline points="9 17 4 12 9 7"/>
                           <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
@@ -175,17 +176,6 @@
                   </div>
                 </div>
               </div>
-              <Transition name="slide">
-                <div v-if="replyingTo === c.id" class="reply-form">
-                  <textarea v-model="replyContent" :placeholder="`回复 ${c.user.nickname}...`" rows="2"></textarea>
-                  <div class="reply-form-actions">
-                    <button @click="cancelReply" class="btn-cancel">取消</button>
-                    <button @click="submitReply(c.id)" class="btn-submit" :disabled="submitting">
-                      {{ submitting ? '提交中...' : '回复' }}
-                    </button>
-                  </div>
-                </div>
-              </Transition>
             </div>
           </div>
           <div v-if="totalCommentPages > 1" class="pagination">
@@ -212,13 +202,22 @@
             发表评论
           </div>
           <div class="card-body">
-            <textarea v-model="commentContent" placeholder="发表你的看法..." rows="3"></textarea>
+            <div v-if="replyingTo" class="reply-indicator">
+              <span>回复 <strong>@{{ replyToUser }}</strong></span>
+              <button @click="cancelReply" class="cancel-reply-btn">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <textarea v-model="commentContent" :placeholder="replyingTo ? `回复 ${replyToUser}...` : '发表你的看法...'" rows="3"></textarea>
             <button @click="submitComment" class="btn-submit-full" :disabled="submitting">
               <svg v-if="!submitting" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="22" y1="2" x2="11" y2="13"/>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
-              {{ submitting ? '提交中...' : '发表评论' }}
+              {{ submitting ? '提交中...' : (replyingTo ? '发送回复' : '发表评论') }}
             </button>
           </div>
         </div>
@@ -251,7 +250,7 @@ const comments = ref([])
 const commentsLoading = ref(true)
 const commentContent = ref('')
 const replyingTo = ref(null)
-const replyContent = ref('')
+const replyToUser = ref(null)
 const submitting = ref(false)
 const commentPage = ref(0)
 const totalCommentPages = ref(0)
@@ -275,8 +274,8 @@ async function processPost() {
 }
 
 async function processComments(commentList) {
+  const commentMap = new Map()
   const topLevelComments = []
-  const replyMap = new Map()
 
   for (const c of commentList) {
     const proc = { ...c }
@@ -286,24 +285,39 @@ async function processComments(commentList) {
       proc.processedAvatar = defaultAvatar
     }
     proc.replies = []
-    replyMap.set(c.id, proc)
+    commentMap.set(c.id, proc)
   }
 
   for (const c of commentList) {
-    const proc = replyMap.get(c.id)
+    const proc = commentMap.get(c.id)
     const parentId = c.parentId ?? c.parent_id
-    if (parentId) {
-      const parent = replyMap.get(parentId)
-      if (parent) {
-        parent.replies.push(proc)
+    
+    if (!parentId) {
+      topLevelComments.push(proc)
+    } else {
+      let rootParentId = parentId
+      let current = commentMap.get(parentId)
+      while (current && (current.parentId || current.parent_id)) {
+        rootParentId = current.parentId || current.parent_id
+        current = commentMap.get(rootParentId)
+      }
+      
+      const rootParent = commentMap.get(rootParentId)
+      if (rootParent && rootParentId !== c.id) {
+        const parentComment = commentMap.get(parentId)
+        proc.replyToName = parentComment?.user?.nickname || ''
+        rootParent.replies.push(proc)
       } else {
         topLevelComments.push(proc)
       }
-    } else {
-      topLevelComments.push(proc)
     }
   }
 
+  for (const tc of topLevelComments) {
+    tc.replies.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  }
+  
+  topLevelComments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   processedComments.value = topLevelComments
 }
 
@@ -377,8 +391,14 @@ async function submitComment() {
   if (!commentContent.value.trim()) return
   submitting.value = true
   try {
-    await postApi.addComment(route.params.id, commentContent.value)
+    if (replyingTo.value) {
+      await postApi.addComment(route.params.id, commentContent.value, replyingTo.value)
+    } else {
+      await postApi.addComment(route.params.id, commentContent.value)
+    }
     commentContent.value = ''
+    replyingTo.value = null
+    replyToUser.value = null
     loadComments(0)
     post.value.commentCount = (post.value.commentCount || 0) + 1
   } catch (e) {
@@ -388,34 +408,18 @@ async function submitComment() {
   }
 }
 
-function showReplyForm(commentId) {
+function setReplyTo(comment) {
   if (!user) {
     router.push('/login')
     return
   }
-  replyingTo.value = commentId
-  replyContent.value = ''
+  replyingTo.value = comment.id
+  replyToUser.value = comment.user.nickname
 }
 
 function cancelReply() {
   replyingTo.value = null
-  replyContent.value = ''
-}
-
-async function submitReply(parentId) {
-  if (!replyContent.value.trim()) return
-  submitting.value = true
-  try {
-    await postApi.addComment(route.params.id, replyContent.value, parentId)
-    replyContent.value = ''
-    replyingTo.value = null
-    loadComments(commentPage.value)
-    post.value.commentCount = (post.value.commentCount || 0) + 1
-  } catch (e) {
-    alert(e.message)
-  } finally {
-    submitting.value = false
-  }
+  replyToUser.value = null
 }
 
 async function deleteComment(id) {
@@ -920,6 +924,16 @@ onMounted(async () => {
   color: var(--color-text-muted);
 }
 
+.reply-to {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.reply-to-name {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
 .reply-text {
   font-size: var(--text-xs);
   color: var(--color-text);
@@ -1043,6 +1057,40 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.reply-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.reply-indicator strong {
+  color: var(--color-primary);
+}
+
+.cancel-reply-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.cancel-reply-btn:hover {
+  background: var(--color-bg-soft);
+  color: var(--color-text);
 }
 
 .comment-form-card textarea {

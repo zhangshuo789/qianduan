@@ -9,7 +9,10 @@
       "Bash(npx vite:*)",
       "Bash(pkill -f \"node.*vite\")",
       "Bash(git commit:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(ls -la D:/WebProject/volleyball-community-frontend/*.md)",
+      "Bash(dir D:\\\\WebProject\\\\volleyball-community-frontend\\\\*.md /b)"
     ]
   }
 }

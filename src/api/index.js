@@ -239,6 +239,42 @@ export const group = {
   }
 }
 
+export const event = {
+  list(page = 0, size = 10) {
+    return request(`/event?page=${page}&size=${size}`)
+  },
+  getDetail(id) {
+    return request(`/event/${id}`)
+  },
+  create(data) {
+    return request('/event', { method: 'POST', body: JSON.stringify(data) })
+  },
+  update(id, data) {
+    return request(`/event/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  },
+  delete(id) {
+    return request(`/event/${id}`, { method: 'DELETE' })
+  },
+  subscribe(id) {
+    return request(`/event/${id}/subscribe`, { method: 'POST' })
+  },
+  unsubscribe(id) {
+    return request(`/event/${id}/subscribe`, { method: 'DELETE' })
+  },
+  register(id, data) {
+    return request(`/event/${id}/register`, { method: 'POST', body: JSON.stringify(data) })
+  },
+  getRegistrations(id) {
+    return request(`/event/${id}/registration`)
+  },
+  reviewRegistration(eventId, regId, approved) {
+    return request(`/event/${eventId}/registration/${regId}?approved=${approved}`, { method: 'PUT' })
+  },
+  getSubscriptions(userId) {
+    return request(`/user/${userId}/subscriptions`)
+  }
+}
+
 // SSE 全局实例
 let eventSource = null
 
@@ -251,6 +287,7 @@ export function connectSSE(onMessage, onGroupMessage) {
 
   try {
     // EventSource 不支持 Header，只能用 Query 参数
+    console.log('SSE connecting to:', `http://localhost:8080/api/sse/connect?token=${encodeURIComponent(token)}`)
     eventSource = new EventSource(`http://localhost:8080/api/sse/connect?token=${encodeURIComponent(token)}`)
 
     eventSource.onerror = () => {
@@ -261,6 +298,7 @@ export function connectSSE(onMessage, onGroupMessage) {
 
     eventSource.addEventListener('newMessage', (e) => {
       try {
+        console.log('SSE received newMessage:', e.data)
         onMessage(JSON.parse(e.data))
       } catch (err) {
         console.error('SSE message parse error:', err)
@@ -289,19 +327,33 @@ export function disconnectSSE() {
   }
 }
 
-export function getUser() {
+import { ref } from 'vue'
+
+const currentUser = ref(getUserFromStorage())
+
+function getUserFromStorage() {
   const data = localStorage.getItem('user')
   return data ? JSON.parse(data) : null
+}
+
+export function getUser() {
+  return currentUser.value
+}
+
+export function useUser() {
+  return currentUser
 }
 
 export function setAuth(token, user) {
   localStorage.setItem('token', token)
   localStorage.setItem('user', JSON.stringify(user))
+  currentUser.value = user
 }
 
 export function clearAuth() {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
+  currentUser.value = null
 }
 
 export async function getAvatarUrl(avatar) {
