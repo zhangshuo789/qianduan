@@ -454,11 +454,11 @@ onMounted(async () => {
 }
 
 .main-container {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
   padding: var(--space-lg);
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 1fr 420px;
   gap: var(--space-lg);
 }
 

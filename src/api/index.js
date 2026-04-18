@@ -90,6 +90,9 @@ export const user = {
   },
   getFeed(id, page = 0, size = 10) {
     return request(`/user/${id}/feed?page=${page}&size=${size}`)
+  },
+  getPosts(id, page = 0, size = 10) {
+    return request(`/user/${id}/posts?page=${page}&size=${size}`)
   }
 }
 

@@ -566,7 +566,6 @@ async function loadUserInfo() {
   try {
     const res = await userApi.getInfo(route.params.id)
     userInfo.value = res.data
-    posts.value = res.data.posts || []
     if (res.data.avatar) {
       displayAvatar.value = (await getAvatarUrl(res.data.avatar)) || defaultAvatar
     } else {
@@ -581,6 +580,18 @@ async function loadUserInfo() {
     userInfo.value = null
   } finally {
     loading.value = false
+  }
+}
+
+async function loadPosts() {
+  postsLoading.value = true
+  try {
+    const res = await userApi.getPosts(route.params.id)
+    posts.value = res.data?.content || []
+  } catch (e) {
+    console.error(e)
+    posts.value = []
+  } finally {
     postsLoading.value = false
   }
 }
@@ -717,7 +728,9 @@ async function loadFeed() {
 }
 
 watch(activeTab, (tab) => {
-  if (tab === 'favorites' && favorites.value.length === 0) {
+  if (tab === 'posts' && posts.value.length === 0) {
+    loadPosts()
+  } else if (tab === 'favorites' && favorites.value.length === 0) {
     loadFavorites()
   } else if (tab === 'following' && followingList.value.length === 0) {
     loadFollowing()
@@ -733,7 +746,10 @@ watch(activeTab, (tab) => {
 watch(
   () => route.query.tab,
   (tab) => {
-    if (tab === 'favorites') {
+    if (tab === 'posts') {
+      activeTab.value = 'posts'
+      loadPosts()
+    } else if (tab === 'favorites') {
       activeTab.value = 'favorites'
       loadFavorites()
     } else if (tab === 'following') {
@@ -750,6 +766,7 @@ watch(
       loadFeed()
     } else {
       activeTab.value = 'posts'
+      loadPosts()
     }
   },
   { immediate: true }
@@ -758,6 +775,7 @@ watch(
 watch(
   () => route.params.id,
   () => {
+    posts.value = []
     favorites.value = []
     followingList.value = []
     followersList.value = []
@@ -766,12 +784,13 @@ watch(
     stats.value = null
     isFollowing.value = false
     loadUserInfo()
+    loadPosts()
   }
 )
 
 onMounted(() => {
-  postsLoading.value = true
   loadUserInfo()
+  loadPosts()
 })
 </script>
 
