@@ -13,6 +13,7 @@ import Groups from '@/views/Groups.vue'
 import GroupChat from '@/views/GroupChat.vue'
 import Events from '@/views/Events.vue'
 import EventDetail from '@/views/EventDetail.vue'
+import CreateEvent from '@/views/CreateEvent.vue'
 import MySubscriptions from '@/views/MySubscriptions.vue'
 import AdminDashboard from '@/views/AdminDashboard.vue'
 import AdminUsers from '@/views/AdminUsers.vue'
@@ -37,6 +38,7 @@ const routes = [
   { path: '/group/:id', name: 'GroupChat', component: GroupChat },
   { path: '/events', name: 'Events', component: Events },
   { path: '/event/:id', name: 'EventDetail', component: EventDetail },
+  { path: '/create-event', name: 'CreateEvent', component: CreateEvent },
   { path: '/my-subscriptions', name: 'MySubscriptions', component: MySubscriptions },
   {
     path: '/admin',

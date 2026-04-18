@@ -17,6 +17,13 @@
           </div>
         </div>
         <div class="header-actions">
+          <router-link v-if="user" to="/create-event" class="action-btn action-btn-create">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>发布赛事</span>
+          </router-link>
           <button class="action-btn" @click="loadEvents">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="23 4 23 10 17 10"/>
@@ -109,8 +116,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { event as eventApi } from '@/api'
+import { ref, onMounted, computed } from 'vue'
+import { event as eventApi, getUser } from '@/api'
+
+const user = getUser()
+const isAdmin = computed(() => user.value?.roles?.includes('ADMIN'))
 
 const loading = ref(true)
 const events = ref([])
@@ -253,6 +263,27 @@ onMounted(() => {
   border-color: var(--color-primary);
   color: var(--color-primary);
   background: var(--color-primary-soft);
+}
+
+.action-btn-create {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-primary);
+  color: white;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.action-btn-create:hover {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: white;
 }
 
 .loading-state {
