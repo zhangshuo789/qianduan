@@ -1,4 +1,6 @@
-const API_BASE = '/api'
+import { config } from '@/config'
+
+const API_BASE = config.apiBaseUrl + config.apiPrefix
 
 function getHeaders(options) {
   const token = localStorage.getItem('token')
@@ -395,8 +397,8 @@ export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStat
 
   try {
     // EventSource 不支持 Header，只能用 Query 参数
-    console.log('SSE connecting to:', `http://localhost:8080/api/sse/connect?token=${encodeURIComponent(token)}`)
-    eventSource = new EventSource(`http://localhost:8080/api/sse/connect?token=${encodeURIComponent(token)}`)
+    console.log('SSE connecting to:', `${config.sseUrl}/api/sse/connect?token=${encodeURIComponent(token)}`)
+    eventSource = new EventSource(`${config.sseUrl}/api/sse/connect?token=${encodeURIComponent(token)}`)
 
     eventSource.onerror = () => {
       // SSE 连接失败时静默关闭，避免持续报错
