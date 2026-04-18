@@ -23,9 +23,25 @@ function handleNewGroupMessage(data) {
   window.dispatchEvent(new CustomEvent('sse:newGroupMessage', { detail: data }))
 }
 
+function handleEventUpdate(data) {
+  window.dispatchEvent(new CustomEvent('sse:eventUpdate', { detail: data }))
+}
+
+function handleEventStatusChanged(data) {
+  window.dispatchEvent(new CustomEvent('sse:eventStatusChanged', { detail: data }))
+}
+
+function handleNewRegistration(data) {
+  window.dispatchEvent(new CustomEvent('sse:newRegistration', { detail: data }))
+}
+
+function handleRegistrationResult(data) {
+  window.dispatchEvent(new CustomEvent('sse:registrationResult', { detail: data }))
+}
+
 watch(user, (newUser) => {
   if (newUser) {
-    connectSSE(handleNewMessage, handleNewGroupMessage)
+    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleNewRegistration, handleRegistrationResult)
   } else {
     disconnectSSE()
   }
@@ -37,7 +53,7 @@ onUnmounted(() => {
 
 provide('connectSSE', () => {
   if (user.value) {
-    connectSSE(handleNewMessage, handleNewGroupMessage)
+    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleNewRegistration, handleRegistrationResult)
   }
 })
 

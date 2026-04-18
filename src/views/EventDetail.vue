@@ -116,6 +116,18 @@
               </svg>
               已报名
             </div>
+
+            <button
+              v-if="user"
+              class="btn btn-report"
+              @click="showReportModal = true"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                <line x1="4" y1="22" x2="4" y2="15"/>
+              </svg>
+              举报
+            </button>
           </div>
         </div>
       </div>
@@ -161,13 +173,41 @@
         </form>
       </div>
     </div>
+
+    <!-- 举报弹窗 -->
+    <div class="modal-overlay" v-if="showReportModal" @click.self="showReportModal = false">
+      <div class="modal ui-card">
+        <h3 class="modal-title">举报内容</h3>
+        <form @submit.prevent="submitReport">
+          <div class="form-group">
+            <label>举报原因</label>
+            <select v-model="reportReason" required>
+              <option value="">请选择举报原因</option>
+              <option value="垃圾广告">垃圾广告</option>
+              <option value="违规内容">违规内容</option>
+              <option value="虚假信息">虚假信息</option>
+              <option value="人身攻击">人身攻击</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>详细说明</label>
+            <textarea v-model="reportDetail" placeholder="请详细描述问题（可选）" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" @click="showReportModal = false">取消</button>
+            <button type="submit" class="btn btn-primary">提交举报</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { event as eventApi, getUser } from '@/api'
+import { event as eventApi, report as reportApi, getUser } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -184,6 +224,9 @@ const registerForm = ref({
   contactPhone: '',
   teamSize: ''
 })
+const showReportModal = ref(false)
+const reportReason = ref('')
+const reportDetail = ref('')
 
 const canSubscribe = computed(() => user.value && event.value)
 const canRegister = computed(() => {
@@ -264,6 +307,28 @@ async function handleRegister() {
     alert(e.message || '报名失败')
   } finally {
     registering.value = false
+  }
+}
+
+async function submitReport() {
+  if (!reportReason.value) {
+    alert('请选择举报原因')
+    return
+  }
+  try {
+    await reportApi.create({
+      targetType: 'EVENT',
+      targetId: event.value.id,
+      reason: reportReason.value,
+      detail: reportDetail.value
+    })
+    alert('举报成功，我们会尽快处理')
+    showReportModal.value = false
+    reportReason.value = ''
+    reportDetail.value = ''
+  } catch (e) {
+    console.error(e)
+    alert(e.message || '举报失败')
   }
 }
 
@@ -483,6 +548,17 @@ onMounted(() => {
   color: var(--color-primary);
 }
 
+.btn-report {
+  background: var(--color-bg-soft);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.btn-report:hover:not(:disabled) {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -577,6 +653,30 @@ onMounted(() => {
 .form-group input:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  background: var(--color-bg-page);
+  color: var(--color-text);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
 }
 
 .modal-actions {

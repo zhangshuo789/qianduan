@@ -155,6 +155,15 @@ export const comment = {
   }
 }
 
+export const report = {
+  create(data) {
+    return request('/admin/reports', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+}
+
 export const file = {
   upload(formData) {
     return multipartRequest('/file/upload', formData)
@@ -278,10 +287,106 @@ export const event = {
   }
 }
 
+export const admin = {
+  // 用户管理
+  getUsers(params = {}) {
+    return request(`/admin/users?page=${params.page || 0}&size=${params.size || 10}&keyword=${params.keyword || ''}&disabled=${params.disabled || ''}`)
+  },
+  setUserRole(userId, roleId) {
+    return request(`/admin/users/${userId}/role`, { method: 'PUT', body: JSON.stringify({ roleId }) })
+  },
+  setUserStatus(userId, disabled, reason) {
+    return request(`/admin/users/${userId}/status`, { method: 'PUT', body: JSON.stringify({ disabled, reason }) })
+  },
+
+  // 内容审核
+  getReports(params = {}) {
+    return request(`/admin/reports?page=${params.page || 0}&size=${params.size || 10}&status=${params.status || ''}`)
+  },
+  handleReport(reportId, approved, result) {
+    return request(`/admin/reports/${reportId}`, { method: 'PUT', body: JSON.stringify({ approved, result }) })
+  },
+  getPendingCount() {
+    return request('/admin/reports/pending')
+  },
+
+  // 内容管理
+  deletePost(postId) {
+    return request(`/admin/posts/${postId}`, { method: 'DELETE' })
+  },
+  deleteComment(commentId) {
+    return request(`/admin/comments/${commentId}`, { method: 'DELETE' })
+  },
+
+  // 赛事管理
+  getEvents(params = {}) {
+    return request(`/admin/events?page=${params.page || 0}&size=${params.size || 10}`)
+  },
+  updateEventStatus(eventId, status) {
+    return request(`/admin/events/${eventId}/status`, { method: 'PUT', body: JSON.stringify({ status }) })
+  },
+  getEventRegistrations(eventId) {
+    return request(`/admin/events/${eventId}/registrations`)
+  },
+
+  // 群聊管理
+  getGroups(params = {}) {
+    return request(`/admin/groups?page=${params.page || 0}&size=${params.size || 10}`)
+  },
+  changeGroupOwner(groupId, newOwnerId) {
+    return request(`/admin/groups/${groupId}/owner`, { method: 'PUT', body: JSON.stringify({ newOwnerId }) })
+  },
+  dissolveGroup(groupId) {
+    return request(`/admin/groups/${groupId}`, { method: 'DELETE' })
+  },
+
+  // 数据统计
+  getOverview() {
+    return request('/admin/stats/overview')
+  },
+  getUserStats() {
+    return request('/admin/stats/users')
+  },
+  getContentStats() {
+    return request('/admin/stats/content')
+  },
+
+  // 系统配置
+  getBoards() {
+    return request('/admin/boards')
+  },
+  createBoard(data) {
+    return request('/admin/boards', { method: 'POST', body: JSON.stringify(data) })
+  },
+  updateBoard(id, data) {
+    return request(`/admin/boards/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  },
+  deleteBoard(id) {
+    return request(`/admin/boards/${id}`, { method: 'DELETE' })
+  },
+  getSensitiveWords() {
+    return request('/admin/sensitive-words')
+  },
+  addSensitiveWord(data) {
+    return request('/admin/sensitive-words', { method: 'POST', body: JSON.stringify(data) })
+  },
+  updateSensitiveWord(id, data) {
+    return request(`/admin/sensitive-words/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  },
+  deleteSensitiveWord(id) {
+    return request(`/admin/sensitive-words/${id}`, { method: 'DELETE' })
+  },
+
+  // 操作日志
+  getLogs(params = {}) {
+    return request(`/admin/logs?page=${params.page || 0}&size=${params.size || 10}`)
+  }
+}
+
 // SSE 全局实例
 let eventSource = null
 
-export function connectSSE(onMessage, onGroupMessage) {
+export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onNewRegistration, onRegistrationResult) {
   if (eventSource) {
     eventSource.close()
   }
@@ -313,6 +418,38 @@ export function connectSSE(onMessage, onGroupMessage) {
         onGroupMessage(JSON.parse(e.data))
       } catch (err) {
         console.error('SSE group message parse error:', err)
+      }
+    })
+
+    eventSource.addEventListener('eventUpdate', (e) => {
+      try {
+        onEventUpdate(JSON.parse(e.data))
+      } catch (err) {
+        console.error('SSE eventUpdate parse error:', err)
+      }
+    })
+
+    eventSource.addEventListener('eventStatusChanged', (e) => {
+      try {
+        onEventStatusChanged(JSON.parse(e.data))
+      } catch (err) {
+        console.error('SSE eventStatusChanged parse error:', err)
+      }
+    })
+
+    eventSource.addEventListener('newRegistration', (e) => {
+      try {
+        onNewRegistration(JSON.parse(e.data))
+      } catch (err) {
+        console.error('SSE newRegistration parse error:', err)
+      }
+    })
+
+    eventSource.addEventListener('registrationResult', (e) => {
+      try {
+        onRegistrationResult(JSON.parse(e.data))
+      } catch (err) {
+        console.error('SSE registrationResult parse error:', err)
       }
     })
   } catch (e) {

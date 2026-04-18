@@ -66,6 +66,13 @@
                 </svg>
                 删除
               </button>
+              <button v-if="user && user.id !== post.user?.id" @click="showReportModal = true" class="btn-report">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                  <line x1="4" y1="22" x2="4" y2="15"/>
+                </svg>
+                举报
+              </button>
             </div>
           </div>
         </article>
@@ -231,13 +238,38 @@
         </div>
       </div>
     </div>
+
+    <!-- 举报弹窗 -->
+    <div class="modal-overlay" v-if="showReportModal" @click.self="showReportModal = false">
+      <div class="modal ui-card">
+        <h3 class="modal-title">举报帖子</h3>
+        <div class="form-group">
+          <label>举报原因</label>
+          <select v-model="reportReason">
+            <option value="">请选择举报原因</option>
+            <option value="垃圾广告">垃圾广告</option>
+            <option value="违规内容">违规内容</option>
+            <option value="人身攻击">人身攻击</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>详细说明（可选）</label>
+          <textarea v-model="reportDetail" placeholder="请详细描述问题..." rows="3"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" @click="showReportModal = false">取消</button>
+          <button class="btn btn-primary" @click="submitReport" :disabled="!reportReason">提交举报</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { post as postApi, comment as commentApi, getUser, getAvatarUrl } from '@/api'
+import { post as postApi, comment as commentApi, report as reportApi, getUser, getAvatarUrl } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -255,6 +287,10 @@ const submitting = ref(false)
 const commentPage = ref(0)
 const totalCommentPages = ref(0)
 const totalComments = ref(0)
+
+const showReportModal = ref(false)
+const reportReason = ref('')
+const reportDetail = ref('')
 
 const authorAvatar = ref('')
 const processedComments = ref([])
@@ -430,6 +466,26 @@ async function deleteComment(id) {
     post.value.commentCount = Math.max((post.value.commentCount || 1) - 1, 0)
   } catch (e) {
     alert(e.message)
+  }
+}
+
+async function submitReport() {
+  if (!reportReason.value) {
+    alert('请选择举报原因')
+    return
+  }
+  try {
+    await reportApi.create({
+      targetType: 'POST',
+      targetId: post.value.id,
+      reason: reportReason.value + (reportDetail.value ? ': ' + reportDetail.value : '')
+    })
+    alert('举报成功，我们会尽快处理')
+    showReportModal.value = false
+    reportReason.value = ''
+    reportDetail.value = ''
+  } catch (e) {
+    alert(e.message || '举报失败')
   }
 }
 
@@ -650,6 +706,135 @@ onMounted(async () => {
 
 .btn-delete:hover {
   background: var(--color-error-soft);
+}
+
+.btn-report {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.btn-report:hover {
+  background: var(--color-error-soft);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  width: 90%;
+  max-width: 400px;
+  padding: var(--space-xl);
+  background: var(--color-card);
+  border-radius: var(--radius-xl);
+}
+
+.modal-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-xl);
+}
+
+.form-group {
+  margin-bottom: var(--space-lg);
+}
+
+.form-group label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  background: var(--color-bg-page);
+  color: var(--color-text);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.btn-secondary {
+  background: var(--color-bg-soft);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .loading, .empty {
