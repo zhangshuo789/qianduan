@@ -87,25 +87,6 @@
           <textarea v-model="form.requirements" placeholder="请输入参赛要求（可选）" rows="3"></textarea>
         </div>
 
-        <div class="form-group">
-          <label>赛事图片</label>
-          <div class="image-upload">
-            <div class="image-list" v-if="imageUrls.length">
-              <div class="image-item" v-for="(url, idx) in imageUrls" :key="idx">
-                <img :src="url" alt="赛事图片" />
-                <button type="button" class="remove-btn" @click="removeImage(idx)">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <input v-model="newImageUrl" type="text" placeholder="输入图片URL添加" @keydown.enter.prevent="addImage" />
-            <button type="button" class="add-image-btn" @click="addImage">添加图片</button>
-          </div>
-        </div>
-
         <div class="form-actions">
           <router-link to="/events" class="btn btn-secondary">取消</router-link>
           <button type="submit" class="btn btn-primary" :disabled="submitting">
@@ -128,8 +109,6 @@ const user = getUser()
 const isAdmin = computed(() => user.value?.isAdmin === true)
 
 const submitting = ref(false)
-const newImageUrl = ref('')
-const imageUrls = ref([])
 
 const form = ref({
   type: 'ACTIVITY',
@@ -146,18 +125,6 @@ const form = ref({
   registrationDeadline: ''
 })
 
-function addImage() {
-  const url = newImageUrl.value.trim()
-  if (url && !imageUrls.value.includes(url)) {
-    imageUrls.value.push(url)
-    newImageUrl.value = ''
-  }
-}
-
-function removeImage(idx) {
-  imageUrls.value.splice(idx, 1)
-}
-
 async function handleSubmit() {
   if (!form.value.title || form.value.title.length < 5) {
     toastBus.warning('赛事标题至少5个字符')
@@ -173,8 +140,7 @@ async function handleSubmit() {
   try {
     const data = {
       ...form.value,
-      maxParticipants: form.value.maxParticipants || null,
-      imageUrls: imageUrls.value.length ? imageUrls.value : null
+      maxParticipants: form.value.maxParticipants || null
     }
 
     await eventApi.create(data)
