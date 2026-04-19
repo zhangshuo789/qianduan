@@ -13,6 +13,7 @@ import { onUnmounted, provide, watch } from 'vue'
 import NavBar from '@/components/NavBar.vue'
 import Toast from '@/components/Toast.vue'
 import { connectSSE, disconnectSSE, useUser } from '@/api'
+import { toastBus } from '@/utils/toast'
 
 const user = useUser()
 
@@ -26,19 +27,31 @@ function handleNewGroupMessage(data) {
 }
 
 function handleEventUpdate(data) {
+  console.log('SSE eventUpdate:', data)
   window.dispatchEvent(new CustomEvent('sse:eventUpdate', { detail: data }))
+  toastBus.info(data.message || `赛事「${data.eventTitle}」已更新`)
 }
 
 function handleEventStatusChanged(data) {
+  console.log('SSE eventStatusChanged:', data)
   window.dispatchEvent(new CustomEvent('sse:eventStatusChanged', { detail: data }))
+  toastBus.warning(data.message || `赛事「${data.eventTitle}」状态已变更：${data.newStatusText || data.newStatus}`)
 }
 
 function handleNewRegistration(data) {
+  console.log('SSE newRegistration:', data)
   window.dispatchEvent(new CustomEvent('sse:newRegistration', { detail: data }))
+  toastBus.success(`用户「${data.userNickname}」报名了赛事「${data.eventTitle}」`)
 }
 
 function handleRegistrationResult(data) {
+  console.log('SSE registrationResult:', data)
   window.dispatchEvent(new CustomEvent('sse:registrationResult', { detail: data }))
+  if (data.approved) {
+    toastBus.success(data.message || `您报名「${data.eventTitle}」的申请已通过！`)
+  } else {
+    toastBus.error(data.message || `您报名「${data.eventTitle}」的申请被拒绝`)
+  }
 }
 
 watch(user, (newUser) => {
