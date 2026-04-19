@@ -48,15 +48,15 @@
           @click="handleNotificationClick(notif)"
         >
           <div class="avatar-wrapper">
-            <div class="notification-avatar">{{ notif.icon }}</div>
+            <div class="notification-avatar">{{ notif.icon || '📢' }}</div>
           </div>
           <div class="conversation-info">
             <div class="conversation-header">
               <span class="conversation-name notification-name">{{ notif.title }}</span>
-              <span class="conversation-time">{{ formatDate(notif.createdAt) }}</span>
+              <span class="conversation-time">{{ formatDate(notif.createdAt || notif.sentAt) }}</span>
             </div>
             <div class="conversation-preview">
-              <span class="preview-text">{{ notif.message }}</span>
+              <span class="preview-text">{{ notif.content || notif.message }}</span>
             </div>
           </div>
         </div>
@@ -97,7 +97,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { message as messageApi, getAvatarUrl, getUser } from '@/api'
+import { message as messageApi, admin, getAvatarUrl, getUser } from '@/api'
 import { notificationStore } from '@/utils/notificationStore'
 
 const loading = ref(true)
@@ -144,13 +144,24 @@ async function loadConversations() {
   }
 }
 
-function loadNotifications() {
-  notifications.value = notificationStore.getAll()
+async function loadNotifications() {
+  try {
+    const res = await admin.getNotificationList()
+    notifications.value = res.data || []
+  } catch (e) {
+    console.error('加载通知列表失败:', e)
+    // 降级到本地缓存
+    notifications.value = notificationStore.getAll()
+  }
 }
 
-function handleNotificationClick(notif) {
-  notificationStore.markAsRead(notif.id)
-  notifications.value = notificationStore.getAll()
+async function handleNotificationClick(notif) {
+  try {
+    await admin.markNotificationRead(notif.id)
+    notifications.value = notifications.value.filter(n => n.id !== notif.id)
+  } catch (e) {
+    console.error('标记已读失败:', e)
+  }
 }
 
 function handleNewMessage(event) {
@@ -190,6 +201,20 @@ function handleEventNotification(event) {
   loadNotifications()
 }
 
+function handleBroadcastNotification(event) {
+  const data = event.detail
+  console.log('收到广播通知:', data)
+  // 新通知添加到列表顶部
+  notifications.value.unshift({
+    id: data.id,
+    title: data.title,
+    content: data.content,
+    icon: '📢',
+    createdAt: data.sentAt || new Date().toISOString(),
+    read: false
+  })
+}
+
 onMounted(() => {
   loadConversations()
   loadNotifications()
@@ -199,6 +224,7 @@ onMounted(() => {
   window.addEventListener('sse:eventStatusChanged', handleEventNotification)
   window.addEventListener('sse:newRegistration', handleEventNotification)
   window.addEventListener('sse:registrationResult', handleEventNotification)
+  window.addEventListener('sse:broadcast', handleBroadcastNotification)
 })
 
 onUnmounted(() => {
@@ -207,6 +233,7 @@ onUnmounted(() => {
   window.removeEventListener('sse:eventStatusChanged', handleEventNotification)
   window.removeEventListener('sse:newRegistration', handleEventNotification)
   window.removeEventListener('sse:registrationResult', handleEventNotification)
+  window.removeEventListener('sse:broadcast', handleBroadcastNotification)
 })
 </script>
 

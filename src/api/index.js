@@ -400,6 +400,26 @@ export const admin = {
   // 操作日志
   getLogs(params = {}) {
     return request(`/admin/logs?page=${params.page || 0}&size=${params.size || 10}`)
+  },
+
+  // 管理通知
+  sendNotification(data) {
+    return request(`/admin/notification/send?type=${data.type || 'BROADCAST'}&persist=${data.persist !== false}`, {
+      method: 'POST',
+      body: JSON.stringify({ title: data.title, content: data.content })
+    })
+  },
+  getNotificationList() {
+    return request('/admin/notification/list')
+  },
+  getNotificationUnreadCount() {
+    return request('/admin/notification/unread-count')
+  },
+  markNotificationRead(id) {
+    return request(`/admin/notification/${id}/read`, { method: 'PUT' })
+  },
+  markAllNotificationsRead() {
+    return request('/admin/notification/read-all', { method: 'PUT' })
   }
 }
 
@@ -414,7 +434,7 @@ const SSE_RECONNECT_DELAY = 1000      // 初始重连延迟 1 秒
 const SSE_MAX_DELAY = 30000            // 最大重连延迟 30 秒
 const SSE_MAX_ATTEMPTS = 10            // 最大重连次数
 
-export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onNewRegistration, onRegistrationResult) {
+export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onNewRegistration, onRegistrationResult, onBroadcast) {
   // 保存回调函数引用，用于重连
   sseCallbacks = {
     onMessage,
@@ -422,7 +442,8 @@ export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStat
     onEventUpdate,
     onEventStatusChanged,
     onNewRegistration,
-    onRegistrationResult
+    onRegistrationResult,
+    onBroadcast
   }
 
   // 如果已存在连接，先断开
@@ -470,7 +491,7 @@ export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStat
 function bindSSEListeners() {
   if (!eventSource || !sseCallbacks) return
 
-  const { onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onNewRegistration, onRegistrationResult } = sseCallbacks
+  const { onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onNewRegistration, onRegistrationResult, onBroadcast } = sseCallbacks
 
   eventSource.addEventListener('newMessage', (e) => {
     try {
@@ -519,6 +540,17 @@ function bindSSEListeners() {
       console.error('SSE registrationResult parse error:', err)
     }
   })
+
+  eventSource.addEventListener('broadcast', (e) => {
+    try {
+      console.log('SSE broadcast:', e.data)
+      if (onBroadcast) {
+        onBroadcast(JSON.parse(e.data))
+      }
+    } catch (err) {
+      console.error('SSE broadcast parse error:', err)
+    }
+  })
 }
 
 function scheduleReconnect() {
@@ -546,7 +578,8 @@ function scheduleReconnect() {
         sseCallbacks.onEventUpdate,
         sseCallbacks.onEventStatusChanged,
         sseCallbacks.onNewRegistration,
-        sseCallbacks.onRegistrationResult
+        sseCallbacks.onRegistrationResult,
+        sseCallbacks.onBroadcast
       )
     }
   }, delay)

@@ -54,9 +54,15 @@ function handleRegistrationResult(data) {
   }
 }
 
+function handleBroadcast(data) {
+  console.log('SSE broadcast:', data)
+  window.dispatchEvent(new CustomEvent('sse:broadcast', { detail: data }))
+  toastBus.info(data.content || data.title || '收到一条新通知')
+}
+
 watch(user, (newUser) => {
   if (newUser) {
-    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleNewRegistration, handleRegistrationResult)
+    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleNewRegistration, handleRegistrationResult, handleBroadcast)
   } else {
     disconnectSSE()
   }
@@ -68,7 +74,7 @@ onUnmounted(() => {
 
 provide('connectSSE', () => {
   if (user.value) {
-    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleNewRegistration, handleRegistrationResult)
+    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleNewRegistration, handleRegistrationResult, handleBroadcast)
   }
 })
 
