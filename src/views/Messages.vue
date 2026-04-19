@@ -29,7 +29,7 @@
         <span>加载中...</span>
       </div>
 
-      <div v-else-if="conversations.length === 0 && notifications.length === 0" class="empty-state">
+      <div v-else-if="conversations.length === 0 && !hasNotifications" class="empty-state">
         <div class="empty-icon">
           <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -41,37 +41,32 @@
 
       <div v-else class="conversations-list">
         <!-- 通知列表 -->
-        <router-link
-          v-for="(notif, index) in notifications"
+        <div
+          v-for="notif in notifications"
           :key="notif.id"
-          to="/events"
           class="conversation-item notification-item animate-fade-in-up"
-          :style="{ animationDelay: `${index * 50}ms` }"
+          @click="handleNotificationClick(notif)"
         >
           <div class="avatar-wrapper">
-            <div class="notification-avatar">{{ notif.eventData?.approved !== undefined ? (notif.eventData.approved ? '✅' : '❌') : notif.eventData?.newStatus ? '🔔' : '📢' }}</div>
+            <div class="notification-avatar">{{ notif.icon }}</div>
           </div>
           <div class="conversation-info">
             <div class="conversation-header">
-              <span class="conversation-name notification-name">{{ notif.oderNickname }}</span>
-              <span class="conversation-time">{{ formatDate(notif.lastMessageTime) }}</span>
+              <span class="conversation-name notification-name">{{ notif.title }}</span>
+              <span class="conversation-time">{{ formatDate(notif.createdAt) }}</span>
             </div>
             <div class="conversation-preview">
-              <span class="preview-text">{{ notif.lastMessage }}</span>
-              <span v-if="notif.unreadCount > 0" class="unread-badge">
-                {{ notif.unreadCount > 99 ? '99+' : notif.unreadCount }}
-              </span>
+              <span class="preview-text">{{ notif.message }}</span>
             </div>
           </div>
-        </router-link>
+        </div>
 
         <!-- 私信列表 -->
         <router-link
-          v-for="(conv, index) in conversations"
+          v-for="conv in conversations"
           :key="conv.oderId"
           :to="`/chat/${conv.oderId}`"
           class="conversation-item animate-fade-in-up"
-          :style="{ animationDelay: `${index * 50}ms` }"
         >
           <div class="avatar-wrapper">
             <img :src="conv.processedAvatar || defaultAvatar" class="conversation-avatar" alt="头像" />
@@ -101,14 +96,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { message as messageApi, getAvatarUrl, getUser } from '@/api'
+import { notificationStore } from '@/utils/notificationStore'
 
 const loading = ref(true)
 const conversations = ref([])
 const notifications = ref([])
 const defaultAvatar = 'https://via.placeholder.com/50'
 const user = getUser()
+
+const hasNotifications = computed(() => notifications.value.length > 0)
 
 function formatDate(d) {
   if (!d) return ''
@@ -146,8 +144,56 @@ async function loadConversations() {
   }
 }
 
+function loadNotifications() {
+  notifications.value = notificationStore.getAll()
+}
+
+function handleNotificationClick(notif) {
+  notificationStore.markAsRead(notif.id)
+  notifications.value = notificationStore.getAll()
+}
+
+function handleNewMessage(event) {
+  const data = event.detail
+  const conv = conversations.value.find(c => c.oderId === data.senderId)
+  if (conv) {
+    conv.lastMessage = data.content
+    conv.lastMessageTime = data.createdAt
+    if (data.senderId !== data.targetId) {
+      conv.unreadCount = (conv.unreadCount || 0) + 1
+    }
+  }
+  conversations.value.sort((a, b) => {
+    return new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
+  })
+}
+
+function handleEventNotification(event) {
+  const data = event.detail
+  const type = event.type.replace('sse:', '')
+
+  const typeMap = {
+    'eventUpdate': { title: '赛事更新', icon: '📢' },
+    'eventStatusChanged': { title: '状态变更', icon: '🔔' },
+    'newRegistration': { title: '新报名', icon: '📝' },
+    'registrationResult': { title: data?.approved ? '报名通过' : '报名被拒', icon: data?.approved ? '✅' : '❌' }
+  }
+  const typeInfo = typeMap[type] || { title: '通知', icon: '📢' }
+
+  notificationStore.add({
+    title: typeInfo.title,
+    icon: typeInfo.icon,
+    message: data.message || data.eventTitle || '收到一条赛事通知',
+    eventData: data
+  })
+
+  loadNotifications()
+}
+
 onMounted(() => {
   loadConversations()
+  loadNotifications()
+
   window.addEventListener('sse:newMessage', handleNewMessage)
   window.addEventListener('sse:eventUpdate', handleEventNotification)
   window.addEventListener('sse:eventStatusChanged', handleEventNotification)
@@ -162,50 +208,6 @@ onUnmounted(() => {
   window.removeEventListener('sse:newRegistration', handleEventNotification)
   window.removeEventListener('sse:registrationResult', handleEventNotification)
 })
-
-function handleNewMessage(event) {
-  const data = event.detail
-  console.log('Messages SSE newMessage:', data)
-  // 找到对应的会话，更新最新消息和未读数
-  const conv = conversations.value.find(c => c.oderId === data.senderId)
-  if (conv) {
-    conv.lastMessage = data.content
-    conv.lastMessageTime = data.createdAt
-    if (data.senderId !== data.targetId) {
-      conv.unreadCount = (conv.unreadCount || 0) + 1
-    }
-  }
-  // 将最新消息的会话移到顶部
-  conversations.value.sort((a, b) => {
-    return new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-  })
-}
-
-function handleEventNotification(event) {
-  console.log('Messages handleEventNotification:', event.type, event.detail)
-  const data = event.detail
-  const typeMap = {
-    'eventUpdate': { icon: '📢', text: '赛事更新' },
-    'eventStatusChanged': { icon: '🔔', text: '状态变更' },
-    'newRegistration': { icon: '📝', text: '新报名' },
-    'registrationResult': { icon: data?.approved ? '✅' : '❌', text: data?.approved ? '报名通过' : '报名被拒' }
-  }
-  const typeInfo = typeMap[event.type.replace('sse:', '')] || { icon: '📢', text: '通知' }
-
-  const notification = {
-    id: `notif-${Date.now()}`,
-    oderId: 'system-notification',
-    oderNickname: typeInfo.text,
-    lastMessage: data.message || data.eventTitle || '收到一条赛事通知',
-    lastMessageTime: new Date().toISOString(),
-    unreadCount: 1,
-    processedAvatar: null,
-    isNotification: true,
-    eventData: data
-  }
-
-  notifications.value.unshift(notification)
-}
 </script>
 
 <style scoped>
@@ -456,6 +458,7 @@ function handleEventNotification(event) {
 
 .notification-item {
   border-left: 3px solid var(--color-primary);
+  cursor: pointer;
 }
 
 .notification-avatar {

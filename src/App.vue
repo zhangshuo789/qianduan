@@ -35,7 +35,7 @@ function handleEventUpdate(data) {
 function handleEventStatusChanged(data) {
   console.log('SSE eventStatusChanged:', data)
   window.dispatchEvent(new CustomEvent('sse:eventStatusChanged', { detail: data }))
-  toastBus.warning(data.message || `赛事「${data.eventTitle}」状态已变更：${data.newStatusText || data.newStatus}`)
+  toastBus.warning(data.message || `赛事「${data.eventTitle}」状态已变更`)
 }
 
 function handleNewRegistration(data) {
