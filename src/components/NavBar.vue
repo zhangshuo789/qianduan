@@ -150,7 +150,7 @@ import { useUser, clearAuth, getAvatarUrl, message as messageApi } from '@/api'
 const router = useRouter()
 const userRef = useUser()
 const user = computed(() => userRef.value)
-const isAdmin = computed(() => user.value?.roles?.includes('ADMIN'))
+const isAdmin = computed(() => user.value?.isAdmin === true)
 const keyword = ref('')
 const menuVisible = ref(false)
 const defaultAvatar = 'https://via.placeholder.com/40'

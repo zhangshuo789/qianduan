@@ -76,7 +76,12 @@ async function handleLogin() {
   try {
     const res = await auth.login(form.value)
     setAuth(res.data.token, res.data.user)
-    router.push('/')
+    // 管理员跳转管理后台，普通用户跳转首页
+    if (res.data.user?.isAdmin) {
+      router.push('/admin/overview')
+    } else {
+      router.push('/')
+    }
   } catch (e) {
     error.value = e.message || '登录失败'
   } finally {

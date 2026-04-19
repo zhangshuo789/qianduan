@@ -125,7 +125,7 @@ import { toastBus } from '@/utils/toast'
 
 const router = useRouter()
 const user = getUser()
-const isAdmin = computed(() => user.value?.roles?.includes('ADMIN'))
+const isAdmin = computed(() => user.value?.isAdmin === true)
 
 const submitting = ref(false)
 const newImageUrl = ref('')
