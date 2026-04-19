@@ -182,6 +182,7 @@ function handleNewMessage(event) {
 }
 
 function handleEventNotification(event) {
+  console.log('Messages handleEventNotification:', event.type, event.detail)
   const data = event.detail
   const typeMap = {
     'eventUpdate': { icon: '📢', text: '赛事更新' },
