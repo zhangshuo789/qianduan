@@ -206,7 +206,6 @@ function handleEventNotification(event) {
   notifications.value.unshift(notification)
 }
 </script>
-</script>
 
 <style scoped>
 .messages-page {
