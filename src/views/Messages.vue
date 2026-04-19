@@ -98,7 +98,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { message as messageApi, admin, getAvatarUrl, getUser } from '@/api'
-import { notificationStore } from '@/utils/notificationStore'
 
 const loading = ref(true)
 const conversations = ref([])
@@ -150,8 +149,7 @@ async function loadNotifications() {
     notifications.value = res.data || []
   } catch (e) {
     console.error('加载通知列表失败:', e)
-    // 降级到本地缓存
-    notifications.value = notificationStore.getAll()
+    notifications.value = []
   }
 }
 
@@ -179,40 +177,27 @@ function handleNewMessage(event) {
   })
 }
 
+// 赛事相关通知（暂时保留，但不再单独处理）
 function handleEventNotification(event) {
-  const data = event.detail
-  const type = event.type.replace('sse:', '')
-
-  const typeMap = {
-    'eventUpdate': { title: '赛事更新', icon: '📢' },
-    'eventStatusChanged': { title: '状态变更', icon: '🔔' },
-    'newRegistration': { title: '新报名', icon: '📝' },
-    'registrationResult': { title: data?.approved ? '报名通过' : '报名被拒', icon: data?.approved ? '✅' : '❌' }
-  }
-  const typeInfo = typeMap[type] || { title: '通知', icon: '📢' }
-
-  notificationStore.add({
-    title: typeInfo.title,
-    icon: typeInfo.icon,
-    message: data.message || data.eventTitle || '收到一条赛事通知',
-    eventData: data
-  })
-
-  loadNotifications()
+  // 赛事通知只通过 Toast 显示，不在列表重复显示
+  console.log('赛事通知:', event.type, event.detail)
 }
 
+// 广播通知
 function handleBroadcastNotification(event) {
   const data = event.detail
   console.log('收到广播通知:', data)
-  // 新通知添加到列表顶部
-  notifications.value.unshift({
-    id: data.id,
-    title: data.title,
-    content: data.content,
-    icon: '📢',
-    createdAt: data.sentAt || new Date().toISOString(),
-    read: false
-  })
+  // 如果通知已存在则不重复添加
+  if (!notifications.value.find(n => n.id === data.id)) {
+    notifications.value.unshift({
+      id: data.id,
+      title: data.title,
+      content: data.content,
+      icon: '📢',
+      createdAt: data.sentAt || new Date().toISOString(),
+      read: false
+    })
+  }
 }
 
 onMounted(() => {
