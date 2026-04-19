@@ -155,10 +155,15 @@ async function loadNotifications() {
 }
 
 function getNotificationId(notif) {
-  return notif.id || notif.eventId
+  return notif?.id || notif?.eventId
 }
 
 async function handleNotificationClick(notif) {
+  if (!Array.isArray(notifications.value)) {
+    notifications.value = []
+    return
+  }
+
   const id = getNotificationId(notif)
   console.log('点击通知:', notif, 'id:', id)
 
