@@ -29,7 +29,7 @@
         <span>加载中...</span>
       </div>
 
-      <div v-else-if="conversations.length === 0" class="empty-state">
+      <div v-else-if="conversations.length === 0 && notifications.length === 0" class="empty-state">
         <div class="empty-icon">
           <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -40,6 +40,32 @@
       </div>
 
       <div v-else class="conversations-list">
+        <!-- 通知列表 -->
+        <router-link
+          v-for="(notif, index) in notifications"
+          :key="notif.id"
+          to="/events"
+          class="conversation-item notification-item animate-fade-in-up"
+          :style="{ animationDelay: `${index * 50}ms` }"
+        >
+          <div class="avatar-wrapper">
+            <div class="notification-avatar">{{ notif.eventData?.approved !== undefined ? (notif.eventData.approved ? '✅' : '❌') : notif.eventData?.newStatus ? '🔔' : '📢' }}</div>
+          </div>
+          <div class="conversation-info">
+            <div class="conversation-header">
+              <span class="conversation-name notification-name">{{ notif.oderNickname }}</span>
+              <span class="conversation-time">{{ formatDate(notif.lastMessageTime) }}</span>
+            </div>
+            <div class="conversation-preview">
+              <span class="preview-text">{{ notif.lastMessage }}</span>
+              <span v-if="notif.unreadCount > 0" class="unread-badge">
+                {{ notif.unreadCount > 99 ? '99+' : notif.unreadCount }}
+              </span>
+            </div>
+          </div>
+        </router-link>
+
+        <!-- 私信列表 -->
         <router-link
           v-for="(conv, index) in conversations"
           :key="conv.oderId"
@@ -80,6 +106,7 @@ import { message as messageApi, getAvatarUrl, getUser } from '@/api'
 
 const loading = ref(true)
 const conversations = ref([])
+const notifications = ref([])
 const defaultAvatar = 'https://via.placeholder.com/50'
 const user = getUser()
 
@@ -122,10 +149,18 @@ async function loadConversations() {
 onMounted(() => {
   loadConversations()
   window.addEventListener('sse:newMessage', handleNewMessage)
+  window.addEventListener('sse:eventUpdate', handleEventNotification)
+  window.addEventListener('sse:eventStatusChanged', handleEventNotification)
+  window.addEventListener('sse:newRegistration', handleEventNotification)
+  window.addEventListener('sse:registrationResult', handleEventNotification)
 })
 
 onUnmounted(() => {
   window.removeEventListener('sse:newMessage', handleNewMessage)
+  window.removeEventListener('sse:eventUpdate', handleEventNotification)
+  window.removeEventListener('sse:eventStatusChanged', handleEventNotification)
+  window.removeEventListener('sse:newRegistration', handleEventNotification)
+  window.removeEventListener('sse:registrationResult', handleEventNotification)
 })
 
 function handleNewMessage(event) {
@@ -145,6 +180,32 @@ function handleNewMessage(event) {
     return new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
   })
 }
+
+function handleEventNotification(event) {
+  const data = event.detail
+  const typeMap = {
+    'eventUpdate': { icon: '📢', text: '赛事更新' },
+    'eventStatusChanged': { icon: '🔔', text: '状态变更' },
+    'newRegistration': { icon: '📝', text: '新报名' },
+    'registrationResult': { icon: data?.approved ? '✅' : '❌', text: data?.approved ? '报名通过' : '报名被拒' }
+  }
+  const typeInfo = typeMap[event.type.replace('sse:', '')] || { icon: '📢', text: '通知' }
+
+  const notification = {
+    id: `notif-${Date.now()}`,
+    oderId: 'system-notification',
+    oderNickname: typeInfo.text,
+    lastMessage: data.message || data.eventTitle || '收到一条赛事通知',
+    lastMessageTime: new Date().toISOString(),
+    unreadCount: 1,
+    processedAvatar: null,
+    isNotification: true,
+    eventData: data
+  }
+
+  notifications.value.unshift(notification)
+}
+</script>
 </script>
 
 <style scoped>
@@ -391,6 +452,26 @@ function handleNewMessage(event) {
 .conversation-item:hover .conversation-arrow {
   color: var(--color-primary);
   transform: translateX(4px);
+}
+
+.notification-item {
+  border-left: 3px solid var(--color-primary);
+}
+
+.notification-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  border: 2px solid var(--color-border-light);
+}
+
+.notification-name {
+  color: var(--color-primary);
 }
 
 @media (max-width: 640px) {
