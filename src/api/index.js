@@ -1,6 +1,4 @@
-import { config } from '@/config'
-
-const API_BASE = config.apiBaseUrl + config.apiPrefix
+const API_BASE = '/api'
 
 function getHeaders(options) {
   const token = localStorage.getItem('token')
@@ -263,6 +261,26 @@ export const event = {
   create(data) {
     return request('/event', { method: 'POST', body: JSON.stringify(data) })
   },
+  createWithImages(formData) {
+    const token = localStorage.getItem('token')
+    return fetch('/api/event', {
+      method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: formData
+    }).then(res => {
+      if (!res.ok) {
+        return res.json().then(err => { throw new Error(err.message || '请求失败') })
+      }
+      return res.json()
+    }).then(data => {
+      if (data.code !== 200) {
+        throw new Error(data.message || '请求失败')
+      }
+      return data
+    })
+  },
   update(id, data) {
     return request(`/event/${id}`, { method: 'PUT', body: JSON.stringify(data) })
   },
@@ -387,82 +405,161 @@ export const admin = {
 
 // SSE 全局实例
 let eventSource = null
+let reconnectTimer = null
+let reconnectAttempts = 0
+let sseCallbacks = null
+
+// SSE 重连配置
+const SSE_RECONNECT_DELAY = 1000      // 初始重连延迟 1 秒
+const SSE_MAX_DELAY = 30000            // 最大重连延迟 30 秒
+const SSE_MAX_ATTEMPTS = 10            // 最大重连次数
 
 export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onNewRegistration, onRegistrationResult) {
+  // 保存回调函数引用，用于重连
+  sseCallbacks = {
+    onMessage,
+    onGroupMessage,
+    onEventUpdate,
+    onEventStatusChanged,
+    onNewRegistration,
+    onRegistrationResult
+  }
+
+  // 如果已存在连接，先断开
   if (eventSource) {
     eventSource.close()
+    eventSource = null
   }
+
   const token = localStorage.getItem('token')
   if (!token) return null
 
-  try {
-    // EventSource 不支持 Header，只能用 Query 参数
-    console.log('SSE connecting to:', `${config.sseUrl}/api/sse/connect?token=${encodeURIComponent(token)}`)
-    eventSource = new EventSource(`${config.sseUrl}/api/sse/connect?token=${encodeURIComponent(token)}`)
+  // 清除之前的重连定时器
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
 
-    eventSource.onerror = () => {
-      // SSE 连接失败时静默关闭，避免持续报错
-      console.warn('SSE 连接失败，已断开')
-      disconnectSSE()
+  try {
+    console.log('SSE connecting...')
+    eventSource = new EventSource(`/api/sse/connect?token=${encodeURIComponent(token)}`)
+
+    // 连接打开，重置重连计数
+    eventSource.onopen = () => {
+      console.log('SSE connected')
+      reconnectAttempts = 0
     }
 
-    eventSource.addEventListener('newMessage', (e) => {
-      try {
-        console.log('SSE received newMessage:', e.data)
-        onMessage(JSON.parse(e.data))
-      } catch (err) {
-        console.error('SSE message parse error:', err)
-      }
-    })
+    eventSource.onerror = () => {
+      console.warn('SSE connection error, will retry...')
+      scheduleReconnect()
+    }
 
-    eventSource.addEventListener('newGroupMessage', (e) => {
-      try {
-        onGroupMessage(JSON.parse(e.data))
-      } catch (err) {
-        console.error('SSE group message parse error:', err)
-      }
-    })
+    // 绑定所有事件监听
+    bindSSEListeners()
 
-    eventSource.addEventListener('eventUpdate', (e) => {
-      try {
-        onEventUpdate(JSON.parse(e.data))
-      } catch (err) {
-        console.error('SSE eventUpdate parse error:', err)
-      }
-    })
-
-    eventSource.addEventListener('eventStatusChanged', (e) => {
-      try {
-        onEventStatusChanged(JSON.parse(e.data))
-      } catch (err) {
-        console.error('SSE eventStatusChanged parse error:', err)
-      }
-    })
-
-    eventSource.addEventListener('newRegistration', (e) => {
-      try {
-        onNewRegistration(JSON.parse(e.data))
-      } catch (err) {
-        console.error('SSE newRegistration parse error:', err)
-      }
-    })
-
-    eventSource.addEventListener('registrationResult', (e) => {
-      try {
-        onRegistrationResult(JSON.parse(e.data))
-      } catch (err) {
-        console.error('SSE registrationResult parse error:', err)
-      }
-    })
   } catch (e) {
-    console.warn('SSE 连接异常:', e)
+    console.warn('SSE connection exception:', e)
+    scheduleReconnect()
     return null
   }
 
   return eventSource
 }
 
+function bindSSEListeners() {
+  if (!eventSource || !sseCallbacks) return
+
+  const { onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onNewRegistration, onRegistrationResult } = sseCallbacks
+
+  eventSource.addEventListener('newMessage', (e) => {
+    try {
+      onMessage(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE newMessage parse error:', err)
+    }
+  })
+
+  eventSource.addEventListener('newGroupMessage', (e) => {
+    try {
+      onGroupMessage(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE newGroupMessage parse error:', err)
+    }
+  })
+
+  eventSource.addEventListener('eventUpdate', (e) => {
+    try {
+      onEventUpdate(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE eventUpdate parse error:', err)
+    }
+  })
+
+  eventSource.addEventListener('eventStatusChanged', (e) => {
+    try {
+      onEventStatusChanged(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE eventStatusChanged parse error:', err)
+    }
+  })
+
+  eventSource.addEventListener('newRegistration', (e) => {
+    try {
+      onNewRegistration(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE newRegistration parse error:', err)
+    }
+  })
+
+  eventSource.addEventListener('registrationResult', (e) => {
+    try {
+      onRegistrationResult(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE registrationResult parse error:', err)
+    }
+  })
+}
+
+function scheduleReconnect() {
+  // 超过最大重连次数，停止重连
+  if (reconnectAttempts >= SSE_MAX_ATTEMPTS) {
+    console.warn('SSE max reconnect attempts reached, stopping...')
+    disconnectSSE()
+    return
+  }
+
+  // 计算延迟时间（指数退避）
+  const delay = Math.min(
+    SSE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts),
+    SSE_MAX_DELAY
+  )
+
+  console.log(`SSE reconnecting in ${delay}ms (attempt ${reconnectAttempts + 1}/${SSE_MAX_ATTEMPTS})`)
+
+  reconnectTimer = setTimeout(() => {
+    reconnectAttempts++
+    if (sseCallbacks) {
+      connectSSE(
+        sseCallbacks.onMessage,
+        sseCallbacks.onGroupMessage,
+        sseCallbacks.onEventUpdate,
+        sseCallbacks.onEventStatusChanged,
+        sseCallbacks.onNewRegistration,
+        sseCallbacks.onRegistrationResult
+      )
+    }
+  }, delay)
+}
+
 export function disconnectSSE() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+  reconnectAttempts = 0
+  sseCallbacks = null
+
   if (eventSource) {
     eventSource.close()
     eventSource = null
