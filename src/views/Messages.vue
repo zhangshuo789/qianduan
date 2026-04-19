@@ -154,15 +154,20 @@ async function loadNotifications() {
   }
 }
 
+function getNotificationId(notif) {
+  return notif.id || notif.eventId
+}
+
 async function handleNotificationClick(notif) {
-  console.log('点击通知:', notif)
-  if (!notif.id) {
+  const id = getNotificationId(notif)
+  console.log('点击通知:', notif, 'id:', id)
+  if (!id) {
     console.error('通知没有 id')
     return
   }
   try {
-    await admin.markNotificationRead(notif.id)
-    notifications.value = notifications.value.filter(n => n.id !== notif.id)
+    await admin.markNotificationRead(id)
+    notifications.value = notifications.value.filter(n => getNotificationId(n) !== id)
   } catch (e) {
     console.error('标记已读失败:', e)
   }
@@ -193,10 +198,12 @@ function handleEventNotification(event) {
 function handleBroadcastNotification(event) {
   const data = event.detail
   console.log('收到广播通知:', data)
+  const id = data.id || data.eventId
   // 如果通知已存在则不重复添加
-  if (!notifications.value.find(n => n.id === data.id)) {
+  if (id && !notifications.value.find(n => (n.id || n.eventId) === id)) {
     notifications.value.unshift({
       id: data.id,
+      eventId: data.eventId,
       title: data.title,
       content: data.content,
       icon: '📢',
