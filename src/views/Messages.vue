@@ -146,6 +146,7 @@ async function loadConversations() {
 async function loadNotifications() {
   try {
     const res = await admin.getNotificationList()
+    console.log('通知列表:', res.data)
     notifications.value = res.data || []
   } catch (e) {
     console.error('加载通知列表失败:', e)
@@ -154,6 +155,11 @@ async function loadNotifications() {
 }
 
 async function handleNotificationClick(notif) {
+  console.log('点击通知:', notif)
+  if (!notif.id) {
+    console.error('通知没有 id')
+    return
+  }
   try {
     await admin.markNotificationRead(notif.id)
     notifications.value = notifications.value.filter(n => n.id !== notif.id)
