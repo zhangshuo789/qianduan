@@ -161,15 +161,20 @@ function getNotificationId(notif) {
 async function handleNotificationClick(notif) {
   const id = getNotificationId(notif)
   console.log('点击通知:', notif, 'id:', id)
+
+  // 如果没有 id，本地直接移除
   if (!id) {
-    console.error('通知没有 id')
+    notifications.value = notifications.value.filter(n => n !== notif)
     return
   }
+
   try {
     await admin.markNotificationRead(id)
     notifications.value = notifications.value.filter(n => getNotificationId(n) !== id)
   } catch (e) {
     console.error('标记已读失败:', e)
+    // API 失败也本地移除
+    notifications.value = notifications.value.filter(n => getNotificationId(n) !== id)
   }
 }
 
