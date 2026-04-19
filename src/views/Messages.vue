@@ -208,19 +208,32 @@ function handleEventNotification(event) {
 function handleBroadcastNotification(event) {
   const data = event.detail
   console.log('收到广播通知:', data)
-  const id = data.id || data.eventId
-  // 如果通知已存在则不重复添加
-  if (id && !notifications.value.find(n => (n.id || n.eventId) === id)) {
-    notifications.value.unshift({
-      id: data.id,
-      eventId: data.eventId,
-      title: data.title,
-      content: data.content,
-      icon: '📢',
-      createdAt: data.sentAt || new Date().toISOString(),
-      read: false
-    })
+
+  // 忽略无效的通知（没有 title 也没有 content）
+  if (!data.title && !data.content) {
+    console.log('无效通知，忽略')
+    return
   }
+
+  const id = data.id || data.eventId
+
+  // 如果有 id，检查是否已存在
+  if (id) {
+    if (notifications.value.find(n => (n.id || n.eventId) === id)) {
+      console.log('通知已存在，忽略')
+      return
+    }
+  }
+
+  notifications.value.unshift({
+    id: data.id,
+    eventId: data.eventId,
+    title: data.title,
+    content: data.content,
+    icon: '📢',
+    createdAt: data.sentAt || new Date().toISOString(),
+    read: false
+  })
 }
 
 onMounted(() => {
