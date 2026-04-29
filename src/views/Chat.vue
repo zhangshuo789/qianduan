@@ -46,39 +46,43 @@
             <div class="date-divider">
               <span>{{ group.date }}</span>
             </div>
-            <div 
-              v-for="(msg, msgIndex) in group.messages" 
-              :key="msg.id" 
-              class="message-wrapper"
-              :class="{ 'message-self': msg.senderId === currentUserId }"
+            <div
+              v-for="(msg, msgIndex) in group.messages"
+              :key="msg.id"
+              class="msg-row"
+              :class="{
+                'msg-self': msg.senderId === currentUserId,
+                'msg-first': msgIndex === 0 || msg.isFirstInGroup,
+                'msg-continue': msgIndex > 0 && !msg.isFirstInGroup
+              }"
             >
-              <div
-                class="message-item"
-                :class="{
-                  'message-first': msgIndex === 0,
-                  'message-last': msgIndex === group.messages.length - 1,
-                  'message-middle': msgIndex > 0 && msgIndex < group.messages.length - 1,
-                  'message-single': group.messages.length === 1
-                }"
-              >
-                <div v-if="msgIndex === 0 || msg.isFirstInGroup" class="message-avatar">
-                  <img v-if="msg.senderId === currentUserId" :src="myAvatar || defaultAvatar" alt="我的头像" />
-                  <img v-else :src="chatUser.processedAvatar || defaultAvatar" alt="头像" />
-                </div>
-                <div v-else class="message-avatar-placeholder"></div>
+              <!-- 头像区域 -->
+              <div class="msg-avatar-area">
+                <img
+                  v-if="msgIndex === 0 || msg.isFirstInGroup"
+                  :src="msg.senderId === currentUserId ? (myAvatar || defaultAvatar) : (chatUser.processedAvatar || defaultAvatar)"
+                  class="msg-avatar"
+                  alt="头像"
+                />
+              </div>
 
-                <div class="message-body">
-                  <div class="message-bubble">
-                    <p class="message-text">{{ msg.content }}</p>
-                  </div>
-                  <div class="message-meta" v-if="msgIndex === group.messages.length - 1 || msg.showTime">
-                    <span class="message-time">{{ formatTime(msg.createdAt) }}</span>
-                    <span v-if="msg.senderId === currentUserId" class="message-status">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                    </span>
-                  </div>
+              <!-- 消息主体 -->
+              <div class="msg-main">
+                <div class="msg-bubble" :class="{
+                  'msg-bubble-first': msgIndex === 0 || msg.isFirstInGroup,
+                  'msg-bubble-middle': msgIndex > 0 && !msg.isFirstInGroup && msgIndex < group.messages.length - 1,
+                  'msg-bubble-last': msgIndex === group.messages.length - 1,
+                  'msg-bubble-single': group.messages.length === 1
+                }">
+                  <p class="msg-text">{{ msg.content }}</p>
+                </div>
+                <div class="msg-footer" v-if="msgIndex === group.messages.length - 1 || msg.showTime">
+                  <span class="msg-time-bottom">{{ formatTime(msg.createdAt) }}</span>
+                  <span v-if="msg.senderId === currentUserId" class="msg-check">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </span>
                 </div>
               </div>
             </div>
@@ -460,10 +464,10 @@ defineExpose({ handleNewMessage })
   margin: 0;
 }
 
+/* ========== 消息列表（私信 & 群聊统一风格）========== */
 .messages-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .date-divider {
@@ -478,7 +482,7 @@ defineExpose({ handleNewMessage })
 }
 
 .date-divider span {
-  padding: var(--space-1) var(--space-md);
+  padding: var(--space-1) var(--space-3);
   background: var(--color-card);
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
@@ -486,115 +490,135 @@ defineExpose({ handleNewMessage })
   box-shadow: var(--shadow-xs);
 }
 
-.message-wrapper {
+/* 消息行 */
+.msg-row {
   display: flex;
-  justify-content: flex-start;
-}
-
-.message-wrapper.message-self {
-  justify-content: flex-end;
-}
-
-.message-item {
-  display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--space-2);
-  max-width: 70%;
-}
-
-.message-avatar {
-  flex-shrink: 0;
-}
-
-.message-avatar img {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  object-fit: cover;
-  border: 2px solid var(--color-border-light);
-}
-
-.message-avatar-placeholder {
-  width: 32px;
-  flex-shrink: 0;
-}
-
-.message-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.message-self .message-body {
-  align-items: flex-end;
-}
-
-.message-bubble {
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-card);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xs);
-  border: 1px solid var(--color-border-light);
-  position: relative;
-  max-width: 100%;
-  word-wrap: break-word;
-}
-
-.message-self .message-bubble {
-  background: var(--color-primary);
-  border: none;
-  color: white;
-}
-
-.message-first .message-bubble {
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-sm);
-}
-
-.message-self.message-first .message-bubble {
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
-}
-
-.message-middle .message-bubble {
-  border-radius: var(--radius-sm);
-}
-
-.message-last .message-bubble {
-  border-radius: var(--radius-xl) var(--radius-sm) var(--radius-xl) var(--radius-xl);
-}
-
-.message-self.message-last .message-bubble {
-  border-radius: var(--radius-sm) var(--radius-xl) var(--radius-xl) var(--radius-xl);
-}
-
-.message-single .message-bubble {
-  border-radius: var(--radius-xl);
-}
-
-.message-text {
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  word-break: break-word;
-  color: inherit;
-}
-
-.message-self .message-text {
-  color: white;
-}
-
-.message-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   padding: 0 var(--space-2);
 }
 
-.message-time {
-  font-size: var(--text-xs);
+.msg-row.msg-first {
+  margin-top: var(--space-3);
+}
+
+.msg-row.msg-continue {
+  margin-top: 2px;
+}
+
+/* 自己的消息靠右 */
+.msg-row.msg-self {
+  flex-direction: row-reverse;
+}
+
+/* 头像区域 */
+.msg-avatar-area {
+  flex-shrink: 0;
+  width: 36px;
+  padding-top: 2px;
+}
+
+.msg-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 2px solid var(--color-border-light);
+  display: block;
+}
+
+.msg-self .msg-avatar {
+  border-color: var(--color-primary-light);
+}
+
+/* 消息主体 */
+.msg-main {
+  max-width: 70%;
+  min-width: 0;
+}
+
+.msg-self .msg-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* 消息气泡 */
+.msg-bubble {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-card);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* 自己的气泡 */
+.msg-self .msg-bubble {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* 连续消息气泡圆角 */
+.msg-bubble-first {
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.msg-self .msg-bubble-first {
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.msg-bubble-middle {
+  border-radius: var(--radius-sm);
+}
+
+.msg-bubble-last {
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+
+.msg-self .msg-bubble-last {
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+
+/* 消息文本 */
+.msg-text {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.msg-self .msg-text {
+  color: #fff;
+}
+
+/* 消息底部时间 */
+.msg-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 2px;
+  padding: 0 var(--space-1);
+}
+
+.msg-time-bottom {
+  font-size: 11px;
   color: var(--color-text-muted);
 }
 
-.message-status {
+.msg-check {
   color: var(--color-primary);
   display: flex;
   align-items: center;
@@ -694,14 +718,17 @@ defineExpose({ handleNewMessage })
     padding: var(--space-md);
   }
 
-  .message-item {
+  .msg-main {
     max-width: 80%;
   }
 
-  .message-avatar img,
-  .message-avatar-placeholder {
-    width: 28px;
-    height: 28px;
+  .msg-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .msg-avatar-area {
+    width: 30px;
   }
 }
 </style>

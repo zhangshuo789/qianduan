@@ -57,34 +57,29 @@
       </div>
 
       <div v-else class="conversations-list">
-        <!-- 通知列表 -->
+        <!-- 通知收件箱（聚合入口） -->
         <div v-if="validNotifications.length > 0" class="section-divider">
           <span class="section-label">通知</span>
         </div>
 
-        <div
-          v-for="notif in validNotifications"
-          :key="notif.id"
-          class="conversation-item notification-item animate-fade-in-up"
-          :class="[`notif-type-${notif.type}`]"
-          @click="handleNotificationClick(notif)"
+        <router-link
+          v-if="validNotifications.length > 0"
+          to="/notifications"
+          class="conversation-item notification-inbox-item animate-fade-in-up"
         >
           <div class="avatar-wrapper">
-            <div class="notification-avatar" :class="`avatar-type-${notif.type}`">
-              <span v-if="notif.type === 'broadcast'">📢</span>
-              <span v-else-if="notif.type === 'event'">🏆</span>
-              <span v-else-if="notif.type === 'registration'">📝</span>
-              <span v-else-if="notif.type === 'system'">⚙️</span>
-              <span v-else>📢</span>
+            <div class="notification-avatar avatar-type-notif-inbox">
+              <span>📢</span>
             </div>
           </div>
           <div class="conversation-info">
             <div class="conversation-header">
-              <span class="conversation-name notification-name">{{ notif.title || '系统通知' }}</span>
-              <span class="conversation-time">{{ formatDate(notif.createdAt || notif.sentAt) }}</span>
+              <span class="conversation-name">通知收件箱</span>
+              <span class="conversation-time">{{ formatDate(latestNotification.createdAt || latestNotification.sentAt) }}</span>
             </div>
             <div class="conversation-preview">
-              <span class="preview-text">{{ notif.content || notif.message }}</span>
+              <span class="preview-text">{{ latestNotification.title || '系统通知' }}：{{ latestNotification.content || latestNotification.message }}</span>
+              <span class="unread-badge notif-unread-badge">{{ validNotifications.length > 99 ? '99+' : validNotifications.length }}</span>
             </div>
           </div>
           <div class="conversation-arrow">
@@ -92,7 +87,7 @@
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </div>
-        </div>
+        </router-link>
 
         <!-- 群聊列表 -->
         <div v-if="groups.length > 0" class="section-divider">
@@ -103,17 +98,10 @@
           v-for="group in groups"
           :key="group.id"
           :to="`/group/${group.id}`"
-          class="conversation-item group-item animate-fade-in-up"
+          class="conversation-item animate-fade-in-up"
         >
           <div class="avatar-wrapper">
-            <div class="group-avatar">
-              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-            </div>
+            <img :src="group.processedAvatar || defaultAvatar" class="conversation-avatar" alt="头像" />
           </div>
           <div class="conversation-info">
             <div class="conversation-header">
@@ -122,7 +110,9 @@
             </div>
             <div class="conversation-preview">
               <span class="preview-text">{{ group.lastMessage || '暂无消息' }}</span>
-              <span class="member-count">{{ group.memberCount }}人</span>
+              <span v-if="group.unreadCount > 0" class="unread-badge">
+                {{ group.unreadCount > 99 ? '99+' : group.unreadCount }}
+              </span>
             </div>
           </div>
           <div class="conversation-arrow">
@@ -295,6 +285,7 @@ const notifications = ref([])
 const groups = ref([])
 const defaultAvatar = DEFAULT_AVATAR
 const user = getUser()
+const currentUserId = ref(user?.id)
 
 const showCreateGroupModal = ref(false)
 const groupForm = ref({ name: '', description: '', memberIds: [] })
@@ -310,6 +301,15 @@ const validNotifications = computed(() => {
     const hasContent = n.content && n.content.trim() || n.message && n.message.trim()
     return hasTitle || hasContent
   })
+})
+
+const latestNotification = computed(() => {
+  if (validNotifications.value.length === 0) return null
+  // 返回最新的一条（按时间倒序取第一条，即列表第一个）
+  const sorted = [...validNotifications.value].sort(
+    (a, b) => new Date(b.createdAt || b.sentAt) - new Date(a.createdAt || a.sentAt)
+  )
+  return sorted[0]
 })
 
 function formatDate(d) {
@@ -376,7 +376,16 @@ async function loadNotifications() {
 async function loadGroups() {
   try {
     const res = await groupApi.getMyGroups()
-    groups.value = res.data?.content || res.data || []
+    const list = res.data?.content || res.data || []
+    for (const g of list) {
+      if (g.avatar) {
+        g.processedAvatar = await getAvatarUrl(g.avatar) || defaultAvatar
+      } else {
+        g.processedAvatar = defaultAvatar
+      }
+      g.unreadCount = g.unreadCount || 0
+    }
+    groups.value = list
   } catch (e) {
     console.error('加载群聊列表失败:', e)
     groups.value = []
@@ -438,39 +447,24 @@ async function handleRefresh() {
   toastBus.success('刷新成功')
 }
 
-function getNotificationId(notif) {
-  return notif?.id || notif?.eventId
-}
-
-async function handleNotificationClick(notif) {
-  const id = getNotificationId(notif)
-
-  if (!id) {
-    notifications.value = notifications.value.filter(n => n !== notif)
-    return
-  }
-
-  try {
-    await admin.markNotificationRead(id)
-    notifications.value = notifications.value.filter(n => getNotificationId(n) !== id)
-    toastBus.success('已标记为已读')
-  } catch (e) {
-    console.error('标记已读失败:', e)
-    notifications.value = notifications.value.filter(n => getNotificationId(n) !== id)
-  }
-}
-
 async function markAllRead() {
-  const ids = validNotifications.value.map(n => getNotificationId(n)).filter(Boolean)
-  if (ids.length === 0) return
+  if (validNotifications.value.length === 0) return
 
   try {
-    await Promise.all(ids.map(id => admin.markNotificationRead(id)))
+    await admin.markAllNotificationsRead()
     notifications.value = []
     toastBus.success('已全部标记为已读')
   } catch (e) {
-    console.error('批量标记已读失败:', e)
-    toastBus.error('操作失败')
+    // 如果批量接口不可用，逐个标记已读
+    try {
+      const ids = validNotifications.value.map(n => n.id || n.eventId).filter(Boolean)
+      await Promise.all(ids.map(id => admin.markNotificationRead(id)))
+      notifications.value = []
+      toastBus.success('已全部标记为已读')
+    } catch (e2) {
+      console.error('批量标记已读失败:', e2)
+      toastBus.error('操作失败')
+    }
   }
 }
 
@@ -489,6 +483,35 @@ function handleNewMessage(event) {
   conversations.value.sort((a, b) => {
     return new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
   })
+}
+
+function handleNewGroupMessage(event) {
+  const data = event.detail || event
+  if (!data || !data.groupId) return
+
+  const group = groups.value.find(g => g.id == data.groupId)
+  if (group) {
+    group.lastMessage = data.content
+    group.lastMessageTime = data.createdAt
+    if (data.senderId != currentUserId.value) {
+      group.unreadCount = (group.unreadCount || 0) + 1
+    }
+  }
+  // 按最新消息时间排序
+  groups.value.sort((a, b) => {
+    const ta = a.lastMessageTime ? new Date(a.lastMessageTime) : new Date(0)
+    const tb = b.lastMessageTime ? new Date(b.lastMessageTime) : new Date(0)
+    return tb - ta
+  })
+}
+
+function handleGroupRead(event) {
+  const { groupId } = event.detail
+  if (!groupId) return
+  const group = groups.value.find(g => g.id == groupId)
+  if (group) {
+    group.unreadCount = 0
+  }
 }
 
 function addNotification(data, type = 'broadcast') {
@@ -547,6 +570,8 @@ onMounted(() => {
   })
 
   window.addEventListener('sse:newMessage', handleNewMessage)
+  window.addEventListener('sse:newGroupMessage', handleNewGroupMessage)
+  window.addEventListener('sse:groupRead', handleGroupRead)
   window.addEventListener('sse:eventUpdate', handleEventNotification)
   window.addEventListener('sse:eventStatusChanged', handleEventNotification)
   window.addEventListener('sse:newRegistration', handleEventNotification)
@@ -556,6 +581,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('sse:newMessage', handleNewMessage)
+  window.removeEventListener('sse:newGroupMessage', handleNewGroupMessage)
+  window.removeEventListener('sse:groupRead', handleGroupRead)
   window.removeEventListener('sse:eventUpdate', handleEventNotification)
   window.removeEventListener('sse:eventStatusChanged', handleEventNotification)
   window.removeEventListener('sse:newRegistration', handleEventNotification)
@@ -840,24 +867,16 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.notification-item {
+.notification-inbox-item {
   border-left: 3px solid var(--color-primary);
 }
 
-.notif-type-broadcast {
-  border-left-color: #f59e0b;
+.notif-unread-badge {
+  background: var(--color-error);
 }
 
-.notif-type-event {
-  border-left-color: #3b82f6;
-}
-
-.notif-type-registration {
-  border-left-color: #22c55e;
-}
-
-.notif-type-system {
-  border-left-color: #a855f7;
+.avatar-type-notif-inbox {
+  background: #fef3c7;
 }
 
 .animate-fade-in-up {
@@ -886,25 +905,6 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.group-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-lg);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.member-count {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  background: var(--color-bg-soft);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
-}
 
 .modal-overlay {
   position: fixed;

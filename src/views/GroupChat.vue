@@ -39,24 +39,35 @@
             <div
               v-for="(msg, msgIndex) in group.messages"
               :key="msg.id"
-              class="chat-message"
+              class="msg-row"
               :class="{
-                'chat-message-self': msg.senderId === currentUserId,
-                'chat-message-first': msgIndex === 0,
-                'chat-message-last': msgIndex === group.messages.length - 1,
-                'chat-message-middle': msgIndex > 0 && msgIndex < group.messages.length - 1,
-                'chat-message-single': group.messages.length === 1
+                'msg-self': msg.senderId === currentUserId,
+                'msg-first': msgIndex === 0 || msg.isFirstInGroup,
+                'msg-continue': msgIndex > 0 && !msg.isFirstInGroup
               }"
             >
-              <div v-if="msgIndex === 0 || msg.isFirstInGroup" class="chat-message-avatar">
-                <img :src="msg.processedAvatar || defaultAvatar" alt="头像" />
+              <!-- 头像区域 -->
+              <div class="msg-avatar-area">
+                <img v-if="msgIndex === 0 || msg.isFirstInGroup" :src="msg.processedAvatar || defaultAvatar" class="msg-avatar" alt="头像" />
               </div>
-              <div v-else class="chat-message-avatar-placeholder"></div>
-              <div class="chat-message-bubble">
-                <div v-if="msgIndex === 0 || msg.isFirstInGroup" class="chat-message-sender">{{ msg.senderNickname }}</div>
-                <p class="chat-message-content">{{ msg.content }}</p>
-                <div class="chat-message-meta" v-if="msgIndex === group.messages.length - 1 || msg.showTime">
-                  <span class="chat-message-time">{{ formatTime(msg.createdAt) }}</span>
+
+              <!-- 消息主体 -->
+              <div class="msg-main">
+                <div v-if="msgIndex === 0 || msg.isFirstInGroup" class="msg-header">
+                  <span class="msg-name">{{ msg.senderNickname }}</span>
+                  <span class="msg-time">{{ formatTime(msg.createdAt) }}</span>
+                </div>
+                <div class="msg-bubble" :class="{
+                  'msg-bubble-first': msgIndex === 0 || msg.isFirstInGroup,
+                  'msg-bubble-middle': msgIndex > 0 && !msg.isFirstInGroup && msgIndex < group.messages.length - 1,
+                  'msg-bubble-last': msgIndex === group.messages.length - 1,
+                  'msg-bubble-single': group.messages.length === 1
+                }">
+                  <p class="msg-text">{{ msg.content }}</p>
+                </div>
+                <!-- 非首条消息才在气泡下方显示时间（首条时间已在头部显示）-->
+                <div class="msg-footer" v-if="!(msgIndex === 0 || msg.isFirstInGroup) && (msgIndex === group.messages.length - 1 || msg.showTime)">
+                  <span class="msg-time-bottom">{{ formatTime(msg.createdAt) }}</span>
                 </div>
               </div>
             </div>
@@ -352,6 +363,8 @@ async function loadMessages() {
     }
     await nextTick()
     scrollToBottom()
+    // 清除该群的未读数
+    window.dispatchEvent(new CustomEvent('sse:groupRead', { detail: { groupId: groupId.value } }))
   } catch (e) {
     console.error(e)
   } finally {
@@ -589,10 +602,10 @@ defineExpose({ handleNewGroupMessage })
   margin-bottom: var(--space-3);
 }
 
+/* ========== 消息列表（群聊 & 私信统一风格）========== */
 .chat-message-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .date-divider {
@@ -607,7 +620,7 @@ defineExpose({ handleNewGroupMessage })
 }
 
 .date-divider span {
-  padding: var(--space-1) var(--space-md);
+  padding: var(--space-1) var(--space-3);
   background: var(--color-card);
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
@@ -615,137 +628,166 @@ defineExpose({ handleNewGroupMessage })
   box-shadow: var(--shadow-xs);
 }
 
-.chat-message {
+/* 消息行 */
+.msg-row {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--space-2);
-  max-width: 70%;
+  padding: 0 var(--space-2);
 }
 
-.chat-message-self {
-  flex-direction: row-reverse;
-  margin-left: auto;
+.msg-row.msg-first {
+  margin-top: var(--space-3);
 }
 
-.chat-message-first {
-  margin-top: var(--space-md);
-}
-
-.chat-message-last {
-  margin-bottom: var(--space-sm);
-}
-
-.chat-message-middle {
+.msg-row.msg-continue {
   margin-top: 2px;
 }
 
-.chat-message-single {
-  margin-top: var(--space-md);
-  margin-bottom: var(--space-sm);
+/* 自己的消息靠右 */
+.msg-row.msg-self {
+  flex-direction: row-reverse;
 }
 
-.chat-message-avatar {
+/* 头像区域 */
+.msg-avatar-area {
   flex-shrink: 0;
+  width: 36px;
+  padding-top: 2px;
 }
 
-.chat-message-avatar img {
-  width: 32px;
-  height: 32px;
+.msg-avatar {
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
   object-fit: cover;
   border: 2px solid var(--color-border-light);
+  display: block;
 }
 
-.chat-message-self .chat-message-avatar img {
+.msg-self .msg-avatar {
   border-color: var(--color-primary-light);
 }
 
-.chat-message-avatar-placeholder {
-  width: 32px;
-  flex-shrink: 0;
+/* 消息主体 */
+.msg-main {
+  max-width: 70%;
+  min-width: 0;
 }
 
-.chat-message-bubble {
-  padding: var(--space-3) var(--space-4);
-  background-color: var(--color-bg-soft);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xs);
-  border: 1px solid var(--color-border-light);
-  position: relative;
-  max-width: 100%;
-  word-wrap: break-word;
+.msg-self .msg-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
-.chat-message-self .chat-message-bubble {
-  background-color: var(--color-primary);
-  border: none;
-  color: white;
+/* 消息头部：名称 + 时间（群聊显示，仅第一条消息显示） */
+.msg-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: 2px;
+  padding: 0 var(--space-1);
 }
 
-.chat-message-first .chat-message-bubble {
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-sm);
-}
-
-.chat-message-self.chat-message-first .chat-message-bubble {
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
-}
-
-.chat-message-middle .chat-message-bubble {
-  border-radius: var(--radius-sm);
-}
-
-.chat-message-self.chat-message-middle .chat-message-bubble {
-  border-radius: var(--radius-sm);
-}
-
-.chat-message-last .chat-message-bubble {
-  border-radius: var(--radius-xl) var(--radius-sm) var(--radius-xl) var(--radius-xl);
-}
-
-.chat-message-self.chat-message-last .chat-message-bubble {
-  border-radius: var(--radius-sm) var(--radius-xl) var(--radius-xl) var(--radius-xl);
-}
-
-.chat-message-single .chat-message-bubble {
-  border-radius: var(--radius-xl);
-}
-
-.chat-message-sender {
+.msg-name {
   font-size: var(--text-xs);
   font-weight: 600;
   color: var(--color-primary);
-  margin-bottom: var(--space-1);
+  line-height: 1.3;
 }
 
-.chat-message-self .chat-message-sender {
-  color: rgba(255, 255, 255, 0.8);
+.msg-self .msg-name {
+  color: var(--color-primary);
 }
 
-.chat-message-content {
-  font-size: var(--text-sm);
-  word-break: break-word;
+.msg-time {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* 消息气泡 */
+.msg-bubble {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-card);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* 自己的气泡 */
+.msg-self .msg-bubble {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* 连续消息气泡圆角（同一人发多条，视觉上连在一起）*/
+.msg-bubble-first {
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.msg-self .msg-bubble-first {
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.msg-bubble-middle {
+  border-radius: var(--radius-sm);
+}
+
+.msg-bubble-last {
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+
+.msg-self .msg-bubble-last {
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+
+.msg-bubble-single {
+  /* 保持默认全圆角 */
+}
+
+/* 消息文本 */
+.msg-text {
   margin: 0;
-  line-height: 1.5;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
-.chat-message-self .chat-message-content {
-  color: white;
+.msg-self .msg-text {
+  color: #fff;
 }
 
-.chat-message-meta {
+/* 消息底部时间（最后一条或需要显示时间的消息） */
+.msg-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  margin-top: var(--space-1);
+  gap: var(--space-1);
+  margin-top: 2px;
+  padding: 0 var(--space-1);
 }
 
-.chat-message-time {
-  font-size: var(--text-xs);
+.msg-time-bottom {
+  font-size: 11px;
   color: var(--color-text-muted);
 }
 
-.chat-message-self .chat-message-time {
-  color: rgba(255, 255, 255, 0.7);
+.msg-self .msg-time-bottom {
+  color: var(--color-text-muted);
 }
 
 .group-chat-input-area {

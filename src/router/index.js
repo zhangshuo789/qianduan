@@ -23,6 +23,7 @@ import AdminEvents from '@/views/AdminEvents.vue'
 import AdminGroups from '@/views/AdminGroups.vue'
 import AdminSettings from '@/views/AdminSettings.vue'
 import AIChat from '@/views/AIChat.vue'
+import NotificationDetail from '@/views/NotificationDetail.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -42,6 +43,7 @@ const routes = [
   { path: '/event/:id', name: 'EventDetail', component: EventDetail },
   { path: '/create-event', name: 'CreateEvent', component: CreateEvent },
   { path: '/my-subscriptions', name: 'MySubscriptions', component: MySubscriptions },
+  { path: '/notifications', name: 'NotificationDetail', component: NotificationDetail },
   { path: '/ai-chat', name: 'AIChat', component: AIChat },
   {
     path: '/admin',
