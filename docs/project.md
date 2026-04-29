@@ -167,11 +167,33 @@
 
 **约束**：message_id + user_id 唯一
 
-#### GroupMember 群成员表
+#### AdminNotification 管理员通知表
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | BIGINT | 主键 |
-| group_id | BIGINT | 群ID |
+| type | VARCHAR(20) | 通知类型（BROADCAST/PRIVATE） |
+| title | VARCHAR(100) | 通知标题 |
+| content | TEXT | 通知内容 |
+| target_user_id | BIGINT | 目标用户ID（null表示全体） |
+| is_read | BOOLEAN | 是否已读 |
+| sent_at | DATETIME | 发送时间 |
+
+#### ChatGroup 群组表
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| name | VARCHAR(50) | 群名称 |
+| description | VARCHAR(255) | 群描述 |
+| avatar | VARCHAR(255) | 群头像（文件ID） |
+| owner_id | BIGINT | 群主ID |
+| created_at | DATETIME | 创建时间 |
+| updated_at | DATETIME | 更新时间 |
+
+#### GroupMember 群成员表（chat_group_member）
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| group_id | BIGINT | 群ID（关联 chat_group.id） |
 | user_id | BIGINT | 用户ID |
 | role | VARCHAR(20) | 角色（OWNER/ADMIN/MEMBER） |
 | banned | BOOLEAN | 是否被禁言 |
@@ -515,7 +537,21 @@ LogUtils.clearMdc();
 订阅：浏览赛事列表 → 订阅赛事 → 接收赛事更新通知
 报名：浏览赛事 → 填写报名信息 → 等待审核 → 接收审核结果通知
 审核：主办方查看报名列表 → 审核通过/拒绝 → 报名者收到SSE通知
+状态通知：定时任务监控赛事时间 → 自动变更状态 → SSE通知订阅者
 ```
+
+### 赛事状态自动变更机制
+
+系统通过定时任务（每分钟执行）自动监控赛事状态：
+
+| 状态 | 说明 | 何时变为下一状态 |
+|------|------|-----------------|
+| REGISTERING | 报名中 | 新建赛事默认状态；start_time 到期时变为 IN_PROGRESS |
+| IN_PROGRESS | 进行中 | start_time 到期时自动变为进行中 |
+| ENDED | 已结束 | end_time 到期时自动变为已结束 |
+| CANCELLED | 已取消 | 主办方或管理员手动取消 |
+
+状态变更时，通过 SSE 事件通知所有订阅者。
 
 ### 管理员端流程
 
@@ -622,7 +658,25 @@ GET    /api/admin/events                  # 赛事列表(所有类型)
 PUT    /api/admin/events/{id}/status      # 修改赛事状态
 GET    /api/admin/events/{id}/registrations # 赛事报名列表
 
-## 群聊管理
+## 群聊功能（用户端）
+POST   /api/groups                          # 创建群聊
+GET    /api/groups/my                      # 获取我的群聊列表
+GET    /api/groups/{id}                   # 获取群信息
+PUT    /api/groups/{id}                   # 修改群信息（群主/管理员）
+PUT    /api/groups/{id}/avatar            # 修改群头像（群主/管理员）
+DELETE /api/groups/{id}                   # 解散群聊（群主）
+GET    /api/groups/{id}/members            # 获取群成员列表
+POST   /api/groups/{id}/members            # 邀请成员（群主/管理员）
+DELETE /api/groups/{id}/members/{userId}   # 移除成员（群主）
+POST   /api/groups/{id}/members/{userId}/leave # 退群
+POST   /api/groups/{id}/members/{userId}/ban # 禁言成员（群主/管理员）
+DELETE /api/groups/{id}/members/{userId}/unban # 解除禁言（群主/管理员）
+POST   /api/groups/{id}/members/{userId}/admin # 设置/取消管理员（群主）
+POST   /api/groups/{id}/transfer           # 转让群主（群主）
+GET    /api/groups/{id}/messages          # 获取群消息列表
+POST   /api/groups/{id}/messages          # 发送群消息
+
+## 管理员群聊管理
 GET    /api/admin/groups                   # 群列表
 PUT    /api/admin/groups/{id}/owner       # 更换群主
 DELETE /api/admin/groups/{id}             # 解散违规群
@@ -641,6 +695,12 @@ GET    /api/admin/sensitive-words         # 敏感词列表
 POST   /api/admin/sensitive-words         # 添加敏感词
 PUT    /api/admin/sensitive-words/{id}   # 更新敏感词
 DELETE /api/admin/sensitive-words/{id}   # 删除敏感词
+
+## 管理员通知发布
+POST   /api/admin/notification/send       # 发送通知（广播/私信）
+GET    /api/admin/notification/list       # 获取通知列表
+GET    /api/admin/notification/unread-count # 未读数量
+PUT    /api/admin/notification/{id}/read # 标记已读
 
 ## 操作日志
 GET    /api/admin/logs                    # 操作日志列表

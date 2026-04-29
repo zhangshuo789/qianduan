@@ -13,7 +13,23 @@
       </select>
     </div>
 
-    <div class="admin-table-container ui-card">
+    <div v-if="loading" class="loading-state">
+      <div class="spinner spinner-lg"></div>
+      <span>加载中...</span>
+    </div>
+
+    <div v-else-if="reports.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+          <line x1="4" y1="22" x2="4" y2="15"/>
+        </svg>
+      </div>
+      <h3>暂无举报内容</h3>
+      <p>{{ statusFilter ? '没有找到符合条件的举报' : '目前没有需要审核的内容' }}</p>
+    </div>
+
+    <div v-else class="admin-table-container ui-card">
       <table class="admin-table">
         <thead>
           <tr>
@@ -69,8 +85,10 @@ const page = ref(0)
 const size = 10
 const statusFilter = ref('')
 const hasMore = ref(false)
+const loading = ref(false)
 
 async function loadReports() {
+  loading.value = true
   try {
     const res = await admin.getReports({
       page: page.value,
@@ -81,6 +99,8 @@ async function loadReports() {
     hasMore.value = reports.value.length === size
   } catch (e) {
     console.error(e)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -138,6 +158,52 @@ onMounted(() => {
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   background: white;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  color: var(--color-text-muted);
+  gap: var(--space-md);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  text-align: center;
+  background: var(--color-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-light);
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  background: var(--color-bg-soft);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-lg);
+  color: var(--color-text-muted);
+}
+
+.empty-state h3 {
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+
+.empty-state p {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
 }
 
 .admin-table-container {
@@ -237,14 +303,32 @@ onMounted(() => {
   border: 1px solid var(--color-border);
 }
 
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-danger {
   background: var(--color-error);
   color: white;
 }
 
+.btn-danger:hover {
+  background: #ff7875;
+}
+
 .btn-success {
   background: var(--color-success);
   color: white;
+}
+
+.btn-success:hover {
+  background: #73d13d;
 }
 
 .admin-pagination {

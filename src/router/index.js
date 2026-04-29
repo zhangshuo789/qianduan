@@ -16,11 +16,13 @@ import EventDetail from '@/views/EventDetail.vue'
 import CreateEvent from '@/views/CreateEvent.vue'
 import MySubscriptions from '@/views/MySubscriptions.vue'
 import AdminDashboard from '@/views/AdminDashboard.vue'
+import AdminOverview from '@/views/AdminOverview.vue'
 import AdminUsers from '@/views/AdminUsers.vue'
 import AdminReports from '@/views/AdminReports.vue'
 import AdminEvents from '@/views/AdminEvents.vue'
 import AdminGroups from '@/views/AdminGroups.vue'
 import AdminSettings from '@/views/AdminSettings.vue'
+import AIChat from '@/views/AIChat.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -40,12 +42,13 @@ const routes = [
   { path: '/event/:id', name: 'EventDetail', component: EventDetail },
   { path: '/create-event', name: 'CreateEvent', component: CreateEvent },
   { path: '/my-subscriptions', name: 'MySubscriptions', component: MySubscriptions },
+  { path: '/ai-chat', name: 'AIChat', component: AIChat },
   {
     path: '/admin',
     component: AdminDashboard,
     children: [
       { path: '', redirect: '/admin/overview' },
-      { path: 'overview', name: 'AdminOverview', component: AdminDashboard },
+      { path: 'overview', name: 'AdminOverview', component: AdminOverview },
       { path: 'users', name: 'AdminUsers', component: AdminUsers },
       { path: 'reports', name: 'AdminReports', component: AdminReports },
       { path: 'events', name: 'AdminEvents', component: AdminEvents },

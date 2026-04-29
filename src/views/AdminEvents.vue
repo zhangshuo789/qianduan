@@ -4,7 +4,25 @@
       <h1>赛事管理</h1>
     </div>
 
-    <div class="admin-table-container ui-card">
+    <div v-if="loading" class="loading-state">
+      <div class="spinner spinner-lg"></div>
+      <span>加载中...</span>
+    </div>
+
+    <div v-else-if="events.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </div>
+      <h3>暂无赛事数据</h3>
+      <p>系统中还没有任何赛事或活动</p>
+    </div>
+
+    <div v-else class="admin-table-container ui-card">
       <table class="admin-table">
         <thead>
           <tr>
@@ -61,14 +79,18 @@ const events = ref([])
 const page = ref(0)
 const size = 10
 const hasMore = ref(false)
+const loading = ref(false)
 
 async function loadEvents() {
+  loading.value = true
   try {
     const res = await admin.getEvents({ page: page.value, size })
     events.value = res.data.content || res.data || []
     hasMore.value = events.value.length === size
   } catch (e) {
     console.error(e)
+  } finally {
+    loading.value = false
   }
 }
 

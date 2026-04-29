@@ -687,12 +687,14 @@ GET /api/message/unread-count
 
 ---
 
-## 群聊模块 /api/group
+## 群聊模块 /api/groups
+
+> 基础路径已从 `/api/group` 更新为 `/api/groups`
 
 ### 创建群聊
 
 ```
-POST /api/group
+POST /api/groups
 ```
 
 **请求数据**：
@@ -701,7 +703,7 @@ POST /api/group
 |------|------|------|------|
 | name | string | 是 | 群名称 |
 | description | string | 否 | 群描述 |
-| memberIds | array | 是 | 成员ID列表（不含创建者） |
+| memberIds | array | 否 | 成员ID列表（不含创建者，可为空） |
 
 **返回数据**：
 
@@ -712,7 +714,8 @@ POST /api/group
   "data": {
     "id": 1,
     "name": "排球群",
-    "description": "",
+    "description": "排球爱好者群",
+    "avatar": null,
     "type": "group",
     "memberCount": 3,
     "createdAt": "2026-04-01T10:00:00"
@@ -727,7 +730,7 @@ POST /api/group
 ### 获取群信息
 
 ```
-GET /api/group/{id}
+GET /api/groups/{id}
 ```
 
 **路径参数**：
@@ -745,7 +748,8 @@ GET /api/group/{id}
   "data": {
     "id": 1,
     "name": "排球群",
-    "description": "",
+    "description": "排球爱好者群",
+    "avatar": "http://localhost:8080/api/file/1",
     "type": "group",
     "memberCount": 5,
     "createdAt": "2026-04-01T10:00:00"
@@ -755,10 +759,152 @@ GET /api/group/{id}
 
 ---
 
+### 修改群信息
+
+```
+PUT /api/groups/{id}
+```
+
+**路径参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | long | 群聊ID |
+
+**请求数据**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 否 | 群名称（仅群主可修改） |
+| description | string | 否 | 群描述（群主/管理员可修改） |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "更新成功",
+  "data": {
+    "id": 1,
+    "name": "排球交流群",
+    "description": "更新后的描述",
+    "avatar": null,
+    "type": "group",
+    "memberCount": 5,
+    "createdAt": "2026-04-01T10:00:00"
+  }
+}
+```
+
+**注意**：需要登录，仅群主可修改群名称，管理员只能修改群描述
+
+---
+
+### 修改群头像
+
+```
+PUT /api/groups/{id}/avatar?avatarFileId={fileId}
+```
+
+**路径参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | long | 群聊ID |
+
+**查询参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| avatarFileId | long | 头像文件ID |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "更新成功",
+  "data": null
+}
+```
+
+**注意**：需要登录，仅群主和管理员可修改
+
+---
+
+### 解散群聊
+
+```
+DELETE /api/groups/{id}
+```
+
+**路径参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | long | 群聊ID |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "解散成功",
+  "data": null
+}
+```
+
+**注意**：需要登录，仅群主可解散群聊
+
+---
+
+### 获取我的群聊列表
+
+```
+GET /api/groups/my
+```
+
+**权限**：登录用户
+
+**查询参数**：
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码（从0开始） |
+| size | int | 否 | 10 | 每页数量 |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "name": "排球群",
+        "description": "排球爱好者群",
+        "avatar": null,
+        "type": "group",
+        "memberCount": 5,
+        "createdAt": "2026-04-01T10:00:00"
+      }
+    ],
+    "totalElements": 10,
+    "totalPages": 1,
+    "number": 0,
+    "size": 10
+  }
+}
+```
+
+---
+
 ### 获取群成员列表
 
 ```
-GET /api/group/{id}/members
+GET /api/groups/{id}/members
 ```
 
 **路径参数**：
@@ -798,10 +944,10 @@ GET /api/group/{id}/members
 
 ---
 
-### 添加群成员
+### 邀请成员
 
 ```
-POST /api/group/{id}/members?userId={userId}
+POST /api/groups/{id}/members?userId={userId}
 ```
 
 **路径参数**：
@@ -814,7 +960,7 @@ POST /api/group/{id}/members?userId={userId}
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| userId | long | 被添加的用户ID |
+| userId | long | 被邀请的用户ID |
 
 **返回数据**：
 
@@ -826,14 +972,14 @@ POST /api/group/{id}/members?userId={userId}
 }
 ```
 
-**注意**：需要登录，仅群主和管理员可添加成员
+**注意**：需要登录，仅群主和管理员可邀请成员
 
 ---
 
-### 移除群成员
+### 移除成员
 
 ```
-DELETE /api/group/{id}/members/{userId}
+DELETE /api/groups/{id}/members/{userId}
 ```
 
 **路径参数**：
@@ -860,7 +1006,7 @@ DELETE /api/group/{id}/members/{userId}
 ### 退群
 
 ```
-POST /api/group/{id}/members/{userId}/leave
+POST /api/groups/{id}/members/{userId}/leave
 ```
 
 **路径参数**：
@@ -868,8 +1014,7 @@ POST /api/group/{id}/members/{userId}/leave
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | long | 群聊ID |
-
-**注意**：实际路径为 `/api/group/{id}/members/{userId}/leave`，userId 从 URL 获取但实际使用当前登录用户ID
+| userId | long | 实际使用当前登录用户ID |
 
 **返回数据**：
 
@@ -888,7 +1033,7 @@ POST /api/group/{id}/members/{userId}/leave
 ### 禁言成员
 
 ```
-POST /api/group/{id}/ban/{userId}
+POST /api/groups/{id}/members/{userId}/ban
 ```
 
 **路径参数**：
@@ -915,7 +1060,7 @@ POST /api/group/{id}/ban/{userId}
 ### 解除禁言
 
 ```
-DELETE /api/group/{id}/unban/{userId}
+DELETE /api/groups/{id}/members/{userId}/unban
 ```
 
 **路径参数**：
@@ -939,10 +1084,75 @@ DELETE /api/group/{id}/unban/{userId}
 
 ---
 
+### 设置/取消管理员
+
+```
+POST /api/groups/{id}/members/{userId}/admin?setAdmin=true
+```
+
+**路径参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | long | 群聊ID |
+| userId | long | 目标用户ID |
+
+**查询参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| setAdmin | boolean | true=设置为管理员，false=取消管理员 |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "设置管理员成功",
+  "data": null
+}
+```
+
+**注意**：需要登录，仅群主可设置/取消管理员
+
+---
+
+### 转让群主
+
+```
+POST /api/groups/{id}/transfer?newOwnerId={newOwnerId}
+```
+
+**路径参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | long | 群聊ID |
+
+**查询参数**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| newOwnerId | long | 新群主用户ID |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "转让成功",
+  "data": null
+}
+```
+
+**注意**：需要登录，仅群主可转让群主身份。转让后原群主变为普通成员
+
+---
+
 ### 获取群聊消息
 
 ```
-GET /api/group/{id}/messages
+GET /api/groups/{id}/messages
 ```
 
 **路径参数**：
@@ -993,7 +1203,7 @@ GET /api/group/{id}/messages
 ### 发送群消息
 
 ```
-POST /api/group/{id}/messages
+POST /api/groups/{id}/messages
 ```
 
 **路径参数**：
@@ -2016,9 +2226,50 @@ GET /api/user/{id}/subscriptions
 | 事件名 | 触发时机 | data 内容 |
 |--------|----------|-----------|
 | eventUpdate | 赛事信息更新 | Event 对象 |
-| eventStatusChanged | 赛事状态变更 | {eventId, oldStatus, newStatus} |
+| eventStatusChanged | 赛事状态变更（自动触发或手动修改） | {eventId, eventTitle, oldStatus, newStatus, message} |
 | newRegistration | 新报名（通知主办方） | Registration 对象 |
 | registrationResult | 报名审核结果（通知报名者） | {eventId, eventTitle, approved} |
+
+### 赛事状态自动变更说明
+
+系统定时任务每分钟扫描赛事状态，自动执行以下变更：
+
+| 原状态 | 新状态 | 触发条件 |
+|--------|--------|----------|
+| REGISTERING | IN_PROGRESS | 当前时间 >= start_time（赛事开始） |
+| IN_PROGRESS | ENDED | 当前时间 >= end_time（赛事结束） |
+
+状态变更后，会通过 SSE 事件 `eventStatusChanged` 推送给所有订阅者。
+
+**eventStatusChanged 事件 data 示例**：
+
+```json
+{
+  "eventId": 1,
+  "eventTitle": "2026年全国排球联赛",
+  "oldStatus": "REGISTERING",
+  "newStatus": "IN_PROGRESS",
+  "message": "赛事已开始，请准时参加"
+}
+```
+
+### 取消赛事
+
+```
+PUT /api/event/{id}/cancel
+```
+
+**说明**：主办方或管理员可以取消赛事（状态变为 CANCELLED），取消后不能再恢复
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "赛事已取消",
+  "data": null
+}
+```
 
 ---
 
@@ -2332,6 +2583,31 @@ GET /api/admin/groups
 | page | int | 否 | 0 | 页码 |
 | size | int | 否 | 10 | 每页数量 |
 
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "name": "排球群",
+        "description": "排球爱好者群",
+        "ownerId": 1,
+        "memberCount": 5,
+        "createdAt": "2026-04-01T10:00:00"
+      }
+    ],
+    "totalElements": 20,
+    "totalPages": 2,
+    "number": 0,
+    "size": 10
+  }
+}
+```
+
 #### 更换群主
 
 ```
@@ -2570,3 +2846,186 @@ GET /api/admin/logs
 |------|------|------|--------|------|
 | page | int | 否 | 0 | 页码 |
 | size | int | 否 | 10 | 每页数量 |
+
+---
+
+## 管理员通知 /api/admin/notification
+
+### 发送通知（仅管理员）
+
+```
+POST /api/admin/notification/send?type=BROADCAST&persist=true
+```
+
+**权限**：仅管理员
+
+**路径参数**：
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| type | string | 否 | BROADCAST | 通知类型：BROADCAST(广播) / PRIVATE(私信) |
+| persist | boolean | 否 | true | 是否存入数据库（仅对BROADCAST有效） |
+
+**请求数据**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | 是 | 通知标题 |
+| content | string | 是 | 通知内容 |
+| targetUserId | long | type=PRIVATE时必填 | 目标用户ID |
+
+**通知类型说明**：
+
+| type | persist | 行为 |
+|------|---------|------|
+| BROADCAST | true | 存入数据库 + SSE广播，所有在线用户都能收到 |
+| BROADCAST | false | 仅SSE广播，不存数据库 |
+| PRIVATE | - | 存入数据库 + SSE发送给指定用户 |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "通知已发送",
+  "data": null
+}
+```
+
+**SSE推送格式**（事件名：`adminNotification`）：
+
+```json
+{
+  "id": 1234567890,
+  "type": "BROADCAST",
+  "title": "系统维护通知",
+  "content": "服务器将于今晚22:00进行维护升级",
+  "sentAt": "2026-04-19T15:00:00"
+}
+```
+
+### 获取通知列表（用户端）
+
+```
+GET /api/admin/notification/list
+```
+
+**权限**：登录用户
+
+**说明**：返回当前用户的私信通知列表
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "type": "PRIVATE",
+        "title": "管理员消息",
+        "content": "您的举报已处理",
+        "targetUserId": 5,
+        "isRead": false,
+        "sentAt": "2026-04-19T15:00:00"
+      }
+    ],
+    "totalElements": 10,
+    "totalPages": 1,
+    "number": 0,
+    "size": 20
+  }
+}
+```
+
+### 获取未读通知数量
+
+```
+GET /api/admin/notification/unread-count
+```
+
+**权限**：登录用户
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "count": 3
+  }
+}
+```
+
+### 标记通知为已读
+
+```
+PUT /api/admin/notification/{id}/read
+```
+
+**权限**：登录用户（只能标记自己的通知）
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "已标记为已读",
+  "data": null
+}
+```
+
+---
+
+## 赛事图片 /api/event/{id}/images
+
+### 上传赛事图片
+
+```
+POST /api/event/{eventId}/images
+```
+
+**权限**：登录用户
+
+**请求参数**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| files | file[] | 是 | 图片文件（支持多张） |
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "图片上传成功",
+  "data": [
+    "http://121.40.154.188:8090/api/file/1",
+    "http://121.40.154.188:8090/api/file/2"
+  ]
+}
+```
+
+### 获取赛事图片列表
+
+```
+GET /api/event/{eventId}/images
+```
+
+**权限**：公开
+
+**返回数据**：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    "http://121.40.154.188:8090/api/file/1",
+    "http://121.40.154.188:8090/api/file/2"
+  ]
+}
+```

@@ -33,25 +33,27 @@
             </svg>
             编辑资料
           </router-link>
-          <button v-else-if="user" class="btn-follow" :class="{ 'btn-following': isFollowing }" @click="toggleFollow">
-            <svg v-if="!isFollowing" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="8.5" cy="7" r="4"/>
-              <line x1="20" y1="8" x2="20" y2="14"/>
-              <line x1="23" y1="11" x2="17" y2="11"/>
-            </svg>
-            <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 24v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            {{ isFollowing ? '已关注' : '关注' }}
-          </button>
-          <router-link v-if="!isSelf && userInfo" :to="`/chat/${userInfo.id}`" class="btn-message">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            发私信
-          </router-link>
+          <div v-else-if="user" class="action-buttons">
+            <button class="btn-follow" :class="{ 'btn-following': isFollowing }" @click="toggleFollow">
+              <svg v-if="!isFollowing" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/>
+                <line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 24v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              {{ isFollowing ? '已关注' : '关注' }}
+            </button>
+            <router-link v-if="userInfo" :to="`/chat/${userInfo.id}`" class="btn-message">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              发私信
+            </router-link>
+          </div>
         </div>
       </div>
       <div class="profile-stats">
@@ -105,7 +107,7 @@
               <p>暂无帖子</p>
             </div>
             <div v-else class="post-list">
-              <router-link v-for="(p, index) in posts" :key="p.id" :to="`/post/${p.id}`" class="post-card animate-fade-in-up" :style="{ animationDelay: `${index * 50}ms` }">
+              <router-link v-for="(p, index) in posts" :key="p.postId" :to="`/post/${p.postId}`" class="post-card animate-fade-in-up" :style="{ animationDelay: `${index * 50}ms` }">
                 <div class="post-content">
                   <h3 class="post-title">{{ p.title }}</h3>
                   <div class="post-meta">
@@ -277,7 +279,7 @@
               <p>暂无动态</p>
             </div>
             <div v-else class="post-list">
-              <router-link v-for="(f, index) in feedList" :key="f.postId" :to="`/post/${f.postId}`" class="post-card animate-fade-in-up" :style="{ animationDelay: `${index * 50}ms` }">
+              <router-link v-for="(f, index) in feedList" :key="f.postId" :to="`/post/${f.postId || f.id}`" class="post-card animate-fade-in-up" :style="{ animationDelay: `${index * 50}ms` }">
                 <div class="post-content">
                   <h3 class="post-title">{{ f.title }}</h3>
                   <div class="post-meta">
@@ -313,7 +315,7 @@
               <p>暂无收藏</p>
             </div>
             <div v-else class="post-list">
-              <router-link v-for="(p, index) in favorites" :key="p.id" :to="`/post/${p.id}`" class="post-card animate-fade-in-up" :style="{ animationDelay: `${index * 50}ms` }">
+              <router-link v-for="(p, index) in favorites" :key="p.postId || p.id" :to="`/post/${p.postId || p.id}`" class="post-card animate-fade-in-up" :style="{ animationDelay: `${index * 50}ms` }">
                 <div class="post-content">
                   <h3 class="post-title">{{ p.title }}</h3>
                   <div class="post-meta">
@@ -445,14 +447,14 @@
 <script setup>
 import { ref, computed, onMounted, watch, h } from 'vue'
 import { useRoute } from 'vue-router'
-import { user as userApi, follow as followApi, getUser, getAvatarUrl } from '@/api'
+import { user as userApi, follow as followApi, getUser, getAvatarUrl, DEFAULT_AVATAR } from '@/api'
 import { toastBus } from '@/utils/toast'
 
 const route = useRoute()
 const userInfo = ref(null)
 const loading = ref(true)
 const user = getUser()
-const defaultAvatar = 'https://via.placeholder.com/80'
+const defaultAvatar = DEFAULT_AVATAR
 const activeTab = ref('posts')
 const posts = ref([])
 const postsLoading = ref(false)
@@ -903,6 +905,11 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+.action-buttons {
+  display: flex;
+  gap: var(--space-sm);
+}
+
 .btn-edit {
   display: flex;
   align-items: center;
@@ -936,6 +943,7 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
 .btn-follow:hover {
@@ -957,21 +965,23 @@ onMounted(() => {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-lg);
-  background: var(--color-primary);
+  background: rgba(255, 255, 255, 0.15);
   color: white;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: var(--radius-lg);
   font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .btn-message:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
-  background: var(--color-primary-dark);
+  background: rgba(255, 255, 255, 0.25);
+  text-decoration: none;
 }
 
 .profile-stats {

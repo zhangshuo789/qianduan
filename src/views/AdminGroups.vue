@@ -4,7 +4,25 @@
       <h1>群聊管理</h1>
     </div>
 
-    <div class="admin-table-container ui-card">
+    <div v-if="loading" class="loading-state">
+      <div class="spinner spinner-lg"></div>
+      <span>加载中...</span>
+    </div>
+
+    <div v-else-if="groups.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <h3>暂无群聊数据</h3>
+      <p>系统中还没有创建任何群聊</p>
+    </div>
+
+    <div v-else class="admin-table-container ui-card">
       <table class="admin-table">
         <thead>
           <tr>
@@ -49,14 +67,18 @@ const groups = ref([])
 const page = ref(0)
 const size = 10
 const hasMore = ref(false)
+const loading = ref(false)
 
 async function loadGroups() {
+  loading.value = true
   try {
     const res = await admin.getGroups({ page: page.value, size })
     groups.value = res.data.content || res.data || []
     hasMore.value = groups.value.length === size
   } catch (e) {
     console.error(e)
+  } finally {
+    loading.value = false
   }
 }
 

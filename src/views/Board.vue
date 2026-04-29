@@ -37,10 +37,10 @@
               发布第一篇帖子
             </router-link>
           </div>
-          <router-link 
-            v-for="(p, index) in posts" 
-            :key="p.id" 
-            :to="`/post/${p.id}`" 
+          <router-link
+            v-for="(p, index) in posts"
+            :key="p.postId || p.id"
+            :to="`/post/${p.postId || p.id}`"
             class="post-item animate-fade-in-up"
             :style="{ animationDelay: `${index * 50}ms` }"
           >

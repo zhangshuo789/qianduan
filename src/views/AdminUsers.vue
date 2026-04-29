@@ -14,7 +14,25 @@
       <button class="btn btn-primary" @click="loadUsers">搜索</button>
     </div>
 
-    <div class="admin-table-container ui-card">
+    <div v-if="loading" class="loading-state">
+      <div class="spinner spinner-lg"></div>
+      <span>加载中...</span>
+    </div>
+
+    <div v-else-if="users.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <h3>暂无用户数据</h3>
+      <p>{{ keyword || disabledFilter ? '没有找到符合条件的用户' : '系统中还没有注册用户' }}</p>
+    </div>
+
+    <div v-else class="admin-table-container ui-card">
       <table class="admin-table">
         <thead>
           <tr>
@@ -31,7 +49,7 @@
           <tr v-for="u in users" :key="u.id">
             <td>{{ u.id }}</td>
             <td>{{ u.nickname }}</td>
-            <td>{{ u.email }}</td>
+            <td>{{ u.email || '-' }}</td>
             <td>
               <span class="role-badge" :class="u.roles?.[0]?.toLowerCase() || 'user'">
                 {{ u.roles?.[0] || 'USER' }}
@@ -72,10 +90,12 @@ const size = 10
 const totalElements = ref(0)
 const keyword = ref('')
 const disabledFilter = ref('')
+const loading = ref(false)
 
 const totalPages = computed(() => Math.ceil(totalElements.value / size))
 
 async function loadUsers() {
+  loading.value = true
   try {
     const res = await admin.getUsers({
       page: page.value,
@@ -87,6 +107,8 @@ async function loadUsers() {
     totalElements.value = res.data.totalElements || 0
   } catch (e) {
     console.error(e)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -159,6 +181,52 @@ onMounted(() => {
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   background: white;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  color: var(--color-text-muted);
+  gap: var(--space-md);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  text-align: center;
+  background: var(--color-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-light);
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  background: var(--color-bg-soft);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-lg);
+  color: var(--color-text-muted);
+}
+
+.empty-state h3 {
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+
+.empty-state p {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
 }
 
 .admin-table-container {
@@ -249,10 +317,24 @@ onMounted(() => {
   color: white;
 }
 
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
 .btn-secondary {
   background: var(--color-bg-soft);
   color: var(--color-text);
   border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-danger {
@@ -260,9 +342,17 @@ onMounted(() => {
   color: white;
 }
 
+.btn-danger:hover {
+  background: #ff7875;
+}
+
 .btn-success {
   background: var(--color-success);
   color: white;
+}
+
+.btn-success:hover {
+  background: #73d13d;
 }
 
 .admin-pagination {

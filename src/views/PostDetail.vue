@@ -269,7 +269,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { post as postApi, comment as commentApi, report as reportApi, getUser, getAvatarUrl } from '@/api'
+import { post as postApi, comment as commentApi, report as reportApi, getUser, getAvatarUrl, DEFAULT_AVATAR } from '@/api'
 import { toastBus } from '@/utils/toast'
 
 const route = useRoute()
@@ -277,7 +277,7 @@ const router = useRouter()
 const post = ref(null)
 const loading = ref(true)
 const user = getUser()
-const defaultAvatar = 'https://via.placeholder.com/40'
+const defaultAvatar = DEFAULT_AVATAR
 
 const comments = ref([])
 const commentsLoading = ref(true)

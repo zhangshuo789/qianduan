@@ -2,7 +2,7 @@
   <div class="group-chat-page ui-page">
     <div class="group-chat-container">
       <header class="group-chat-header ui-card ui-pop-in">
-        <router-link to="/groups" class="group-chat-back">
+        <router-link to="/messages" class="group-chat-back">
           <span class="group-chat-back-icon">&lt;</span>
           返回
         </router-link>
@@ -13,26 +13,54 @@
             <span class="group-chat-member-count">{{ members.length }} 位成员</span>
           </div>
         </div>
-        <button v-if="isOwner" class="ui-button ui-button-secondary" @click="showMembersModal = true">管理成员</button>
+        <div class="header-actions">
+          <button v-if="isOwner" class="ui-button ui-button-secondary" @click="showInviteModal = true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <line x1="20" y1="8" x2="20" y2="14"/>
+              <line x1="23" y1="11" x2="17" y2="11"/>
+            </svg>
+            邀请
+          </button>
+          <button v-if="isOwner" class="ui-button ui-button-secondary" @click="showMembersModal = true">管理成员</button>
+          <button v-if="!isOwner" class="ui-button ui-button-secondary ui-button-danger" @click="leaveGroup">退群</button>
+        </div>
       </header>
 
       <section ref="messagesContainer" class="group-chat-messages ui-card">
         <div v-if="loading" class="ui-loading">加载中...</div>
         <div v-else-if="messages.length === 0" class="ui-empty">暂无消息</div>
         <div v-else class="chat-message-list">
-          <div
-            v-for="msg in messages"
-            :key="msg.id"
-            class="chat-message"
-            :class="{ 'chat-message-self': msg.senderId === currentUserId }"
-          >
-            <img :src="msg.processedAvatar || defaultAvatar" class="chat-message-avatar" alt="头像" />
-            <div class="chat-message-bubble">
-              <div class="chat-message-sender">{{ msg.senderNickname }}</div>
-              <p class="chat-message-content">{{ msg.content }}</p>
-              <span class="chat-message-time">{{ formatTime(msg.createdAt) }}</span>
+          <template v-for="(group, groupIndex) in groupedMessages" :key="groupIndex">
+            <div class="date-divider">
+              <span>{{ group.date }}</span>
             </div>
-          </div>
+            <div
+              v-for="(msg, msgIndex) in group.messages"
+              :key="msg.id"
+              class="chat-message"
+              :class="{
+                'chat-message-self': msg.senderId === currentUserId,
+                'chat-message-first': msgIndex === 0,
+                'chat-message-last': msgIndex === group.messages.length - 1,
+                'chat-message-middle': msgIndex > 0 && msgIndex < group.messages.length - 1,
+                'chat-message-single': group.messages.length === 1
+              }"
+            >
+              <div v-if="msgIndex === 0 || msg.isFirstInGroup" class="chat-message-avatar">
+                <img :src="msg.processedAvatar || defaultAvatar" alt="头像" />
+              </div>
+              <div v-else class="chat-message-avatar-placeholder"></div>
+              <div class="chat-message-bubble">
+                <div v-if="msgIndex === 0 || msg.isFirstInGroup" class="chat-message-sender">{{ msg.senderNickname }}</div>
+                <p class="chat-message-content">{{ msg.content }}</p>
+                <div class="chat-message-meta" v-if="msgIndex === group.messages.length - 1 || msg.showTime">
+                  <span class="chat-message-time">{{ formatTime(msg.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
       </section>
 
@@ -53,25 +81,133 @@
 
       <!-- 成员管理弹窗 -->
       <div v-if="showMembersModal" class="modal-overlay" @click.self="showMembersModal = false">
-        <div class="modal-content ui-card ui-pop-in">
-          <h2 class="modal-title">群成员管理</h2>
-          <div class="members-list">
-            <div v-for="m in members" :key="m.id" class="member-item">
-              <img :src="m.processedAvatar || defaultAvatar" class="member-avatar" alt="头像" />
-              <span class="member-name">{{ m.nickname }}</span>
-              <span v-if="m.role === 'OWNER'" class="member-role">群主</span>
-              <span v-else-if="m.role === 'ADMIN'" class="member-role">管理员</span>
-              <button
-                v-if="isOwner && m.id !== currentUserId"
-                class="ui-button ui-button-secondary"
-                @click="removeMember(m.id)"
-              >
-                移除
-              </button>
+        <div class="modal-content members-modal">
+          <div class="modal-header">
+            <div class="modal-header-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div class="modal-header-content">
+              <h3>群成员管理</h3>
+              <p class="modal-header-desc">{{ members.length }} 位成员</p>
+            </div>
+            <button class="modal-close" @click="showMembersModal = false">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="members-list">
+              <div v-for="m in members" :key="m.userId" class="member-item">
+                <img :src="m.processedAvatar || defaultAvatar" class="member-avatar" alt="头像" />
+                <div class="member-info">
+                  <span class="member-name">{{ m.nickname }}</span>
+                  <span v-if="m.role === 'OWNER'" class="member-role owner">群主</span>
+                </div>
+                <button
+                  v-if="isOwner && m.userId !== currentUserId"
+                  class="btn btn-danger btn-sm"
+                  @click="removeMember(m.userId)"
+                >
+                  移除
+                </button>
+              </div>
             </div>
           </div>
-          <div class="modal-actions">
-            <button class="ui-button ui-button-primary" @click="showMembersModal = false">关闭</button>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" @click="showMembersModal = false">关闭</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 邀请成员弹窗 -->
+      <div v-if="showInviteModal" class="modal-overlay" @click.self="showInviteModal = false">
+        <div class="modal-content invite-modal">
+          <div class="modal-header">
+            <div class="modal-header-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/>
+                <line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+            </div>
+            <div class="modal-header-content">
+              <h3>邀请成员</h3>
+              <p class="modal-header-desc">邀请粉丝加入群聊</p>
+            </div>
+            <button class="modal-close" @click="showInviteModal = false">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="section-header">
+              <label class="form-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                选择粉丝
+              </label>
+              <span class="hint-badge">仅限粉丝</span>
+            </div>
+            <div v-if="loadingFollowers" class="loading-members">
+              <div class="spinner spinner-sm"></div>
+              <span>加载粉丝列表...</span>
+            </div>
+            <div v-else-if="followers.length === 0" class="empty-followers">
+              <div class="empty-icon">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <line x1="23" y1="11" x2="17" y2="11"/>
+                </svg>
+              </div>
+              <p>暂无粉丝可邀请</p>
+            </div>
+            <div v-else class="invite-list">
+              <label v-for="f in followers" :key="f.id" class="invite-item" :class="{ 'disabled': isMember(f.id) }">
+                <input type="checkbox" :value="f.id" v-model="selectedInvitees" :disabled="isMember(f.id)" class="member-checkbox" />
+                <img :src="f.processedAvatar || defaultAvatar" class="member-avatar" alt="头像" />
+                <div class="member-info">
+                  <span class="member-name">{{ f.nickname }}</span>
+                </div>
+                <span v-if="isMember(f.id)" class="already-member">已在群中</span>
+                <div v-else class="check-icon" :class="{ 'checked': selectedInvitees.includes(f.id) }">
+                  <svg v-if="selectedInvitees.includes(f.id)" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+              </label>
+            </div>
+            <div class="selected-summary">
+              <span class="selected-label">已选择</span>
+              <span class="selected-count">{{ selectedInvitees.length }}</span>
+              <span class="selected-unit">人</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" @click="showInviteModal = false">取消</button>
+            <button class="btn btn-primary" :disabled="selectedInvitees.length === 0 || inviting" @click="inviteMembers">
+              <svg v-if="!inviting" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/>
+                <line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+              {{ inviting ? '邀请中...' : '邀请成员' }}
+            </button>
           </div>
         </div>
       </div>
@@ -80,9 +216,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { group as groupApi, getAvatarUrl, getUser } from '@/api'
+import { group as groupApi, follow as followApi, getAvatarUrl, getUser, DEFAULT_AVATAR } from '@/api'
 import { toastBus } from '@/utils/toast'
 
 const route = useRoute()
@@ -92,17 +228,80 @@ const newMessage = ref('')
 const loading = ref(true)
 const sending = ref(false)
 const messagesContainer = ref(null)
-const defaultAvatar = 'https://via.placeholder.com/36'
+const defaultAvatar = DEFAULT_AVATAR
 const currentUserId = ref(null)
 const groupInfo = ref(null)
 const members = ref([])
 const showMembersModal = ref(false)
+const showInviteModal = ref(false)
+const followers = ref([])
+const loadingFollowers = ref(false)
+const selectedInvitees = ref([])
+const inviting = ref(false)
 
 const groupId = computed(() => route.params.id)
 const isOwner = computed(() => {
   const owner = members.value.find(m => m.role === 'OWNER')
-  return owner?.id === currentUserId.value
+  return owner?.userId === currentUserId.value
 })
+
+const groupedMessages = computed(() => {
+  if (!messages.value.length) return []
+
+  const groups = []
+  let currentDate = ''
+  let currentGroup = null
+
+  messages.value.forEach((msg, index) => {
+    const msgDate = formatDate(msg.createdAt)
+
+    if (msgDate !== currentDate) {
+      if (currentGroup) groups.push(currentGroup)
+      currentDate = msgDate
+      currentGroup = {
+        date: msgDate,
+        messages: []
+      }
+    }
+
+    const prevMsg = index > 0 ? messages.value[index - 1] : null
+    const timeDiff = prevMsg ? new Date(msg.createdAt) - new Date(prevMsg.createdAt) : Infinity
+    const isSameSender = prevMsg && prevMsg.senderId === msg.senderId
+    const isFirstInGroup = !isSameSender || timeDiff > 5 * 60 * 1000
+
+    const nextMsg = index < messages.value.length - 1 ? messages.value[index + 1] : null
+    const nextTimeDiff = nextMsg ? new Date(nextMsg.createdAt) - new Date(msg.createdAt) : Infinity
+    const nextIsSameSender = nextMsg && nextMsg.senderId === msg.senderId
+    const showTime = !nextIsSameSender || nextTimeDiff > 5 * 60 * 1000
+
+    currentGroup.messages.push({
+      ...msg,
+      isFirstInGroup,
+      showTime
+    })
+  })
+
+  if (currentGroup) groups.push(currentGroup)
+
+  return groups
+})
+
+function formatDate(d) {
+  if (!d) return ''
+  const date = new Date(d)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const yesterday = new Date(today.getTime() - 86400000)
+
+  if (messageDate.getTime() === today.getTime()) {
+    return '今天'
+  } else if (messageDate.getTime() === yesterday.getTime()) {
+    return '昨天'
+  } else {
+    return date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
+  }
+}
 
 function formatTime(d) {
   if (!d) return ''
@@ -111,6 +310,7 @@ function formatTime(d) {
 }
 
 async function loadGroupInfo() {
+  if (!groupId.value) return
   try {
     const res = await groupApi.getInfo(groupId.value)
     groupInfo.value = res.data
@@ -120,6 +320,7 @@ async function loadGroupInfo() {
 }
 
 async function loadMembers() {
+  if (!groupId.value) return
   try {
     const res = await groupApi.getMembers(groupId.value)
     members.value = res.data || []
@@ -136,10 +337,12 @@ async function loadMembers() {
 }
 
 async function loadMessages() {
+  if (!groupId.value) return
   loading.value = true
   try {
     const res = await groupApi.getMessages(groupId.value)
-    messages.value = res.data?.content || []
+    const msgs = res.data?.content || []
+    messages.value = msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
     for (const msg of messages.value) {
       if (msg.senderAvatar) {
         msg.processedAvatar = await getAvatarUrl(msg.senderAvatar) || defaultAvatar
@@ -184,9 +387,78 @@ async function sendMessage() {
 async function removeMember(userId) {
   try {
     await groupApi.removeMember(groupId.value, userId)
-    members.value = members.value.filter(m => m.id !== userId)
+    members.value = members.value.filter(m => m.userId !== userId)
+    toastBus.success('移除成功')
   } catch (e) {
     toastBus.error(e.message)
+  }
+}
+
+function isMember(userId) {
+  return members.value.some(m => m.userId === userId)
+}
+
+async function loadFollowers() {
+  if (!currentUserId.value) return
+  loadingFollowers.value = true
+  try {
+    const res = await followApi.getFollowers(currentUserId.value, 0, 50)
+    const list = res.data?.content || []
+    for (const f of list) {
+      if (f.avatar) {
+        f.processedAvatar = await getAvatarUrl(f.avatar) || defaultAvatar
+      } else {
+        f.processedAvatar = defaultAvatar
+      }
+    }
+    followers.value = list
+  } catch (e) {
+    console.error('加载粉丝列表失败:', e)
+    followers.value = []
+  } finally {
+    loadingFollowers.value = false
+  }
+}
+
+async function inviteMembers() {
+  if (selectedInvitees.value.length === 0) return
+  inviting.value = true
+  let successCount = 0
+  let failCount = 0
+
+  for (const userId of selectedInvitees.value) {
+    try {
+      await groupApi.addMember(groupId.value, userId)
+      successCount++
+    } catch (e) {
+      failCount++
+      console.error(`邀请用户 ${userId} 失败:`, e)
+    }
+  }
+
+  inviting.value = false
+  selectedInvitees.value = []
+  
+  if (successCount > 0) {
+    toastBus.success(`成功邀请 ${successCount} 人`)
+    await loadMembers()
+  }
+  if (failCount > 0) {
+    toastBus.warning(`${failCount} 人邀请失败`)
+  }
+  if (successCount > 0 && failCount === 0) {
+    showInviteModal.value = false
+  }
+}
+
+async function leaveGroup() {
+  if (!confirm('确定要退出该群聊吗？')) return
+  try {
+    await groupApi.leave(groupId.value, currentUserId.value)
+    toastBus.success('已退出群聊')
+    router.push('/messages')
+  } catch (e) {
+    toastBus.error(e.message || '退群失败')
   }
 }
 
@@ -196,10 +468,23 @@ function scrollToBottom() {
   }
 }
 
-function handleNewGroupMessage(data) {
+async function handleNewGroupMessage(event) {
+  const data = event.detail || event
+  if (data.groupId && data.groupId !== groupId.value) return
+  if (data.senderAvatar) {
+    data.processedAvatar = await getAvatarUrl(data.senderAvatar) || defaultAvatar
+  } else {
+    data.processedAvatar = defaultAvatar
+  }
   messages.value.push(data)
   nextTick(() => scrollToBottom())
 }
+
+watch(showInviteModal, (val) => {
+  if (val && followers.value.length === 0) {
+    loadFollowers()
+  }
+})
 
 onMounted(() => {
   const user = getUser()
@@ -307,38 +592,122 @@ defineExpose({ handleNewGroupMessage })
 .chat-message-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 2px;
+}
+
+.date-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--space-lg) 0 var(--space-md);
+}
+
+.date-divider:first-child {
+  margin-top: 0;
+}
+
+.date-divider span {
+  padding: var(--space-1) var(--space-md);
+  background: var(--color-card);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  box-shadow: var(--shadow-xs);
 }
 
 .chat-message {
   display: flex;
   align-items: flex-end;
   gap: var(--space-2);
+  max-width: 70%;
 }
 
 .chat-message-self {
   flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+.chat-message-first {
+  margin-top: var(--space-md);
+}
+
+.chat-message-last {
+  margin-bottom: var(--space-sm);
+}
+
+.chat-message-middle {
+  margin-top: 2px;
+}
+
+.chat-message-single {
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-sm);
 }
 
 .chat-message-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.chat-message-avatar img {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
   object-fit: cover;
-  border: 1px solid var(--color-border);
+  border: 2px solid var(--color-border-light);
+}
+
+.chat-message-self .chat-message-avatar img {
+  border-color: var(--color-primary-light);
+}
+
+.chat-message-avatar-placeholder {
+  width: 32px;
   flex-shrink: 0;
 }
 
 .chat-message-bubble {
-  max-width: 70%;
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
   background-color: var(--color-bg-soft);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--color-border-light);
+  position: relative;
+  max-width: 100%;
+  word-wrap: break-word;
 }
 
 .chat-message-self .chat-message-bubble {
   background-color: var(--color-primary);
-  color: #fff;
+  border: none;
+  color: white;
+}
+
+.chat-message-first .chat-message-bubble {
+  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-sm);
+}
+
+.chat-message-self.chat-message-first .chat-message-bubble {
+  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
+}
+
+.chat-message-middle .chat-message-bubble {
+  border-radius: var(--radius-sm);
+}
+
+.chat-message-self.chat-message-middle .chat-message-bubble {
+  border-radius: var(--radius-sm);
+}
+
+.chat-message-last .chat-message-bubble {
+  border-radius: var(--radius-xl) var(--radius-sm) var(--radius-xl) var(--radius-xl);
+}
+
+.chat-message-self.chat-message-last .chat-message-bubble {
+  border-radius: var(--radius-sm) var(--radius-xl) var(--radius-xl) var(--radius-xl);
+}
+
+.chat-message-single .chat-message-bubble {
+  border-radius: var(--radius-xl);
 }
 
 .chat-message-sender {
@@ -355,13 +724,24 @@ defineExpose({ handleNewGroupMessage })
 .chat-message-content {
   font-size: var(--text-sm);
   word-break: break-word;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.chat-message-self .chat-message-content {
+  color: white;
+}
+
+.chat-message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: var(--space-1);
 }
 
 .chat-message-time {
-  display: block;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-  margin-top: var(--space-1);
 }
 
 .chat-message-self .chat-message-time {
@@ -413,53 +793,388 @@ defineExpose({ handleNewGroupMessage })
   overflow-y: auto;
   padding: var(--space-5);
   border-radius: var(--radius-xl);
+  background: #FFFFFF;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--color-border-light);
 }
 
-.modal-title {
+.header-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.header-actions .ui-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.invite-modal {
+  max-width: 450px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  border-bottom: 1px solid var(--color-border-light);
+  background: #F8FAFC;
+}
+
+.modal-header-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--color-primary);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.modal-header-content {
+  flex: 1;
+}
+
+.modal-header-content h3 {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.modal-header-desc {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--color-card);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+  background: var(--color-error);
+  color: white;
+}
+
+.modal-body {
+  padding: var(--space-lg);
+  overflow-y: auto;
+  flex: 1;
+  background: #FFFFFF;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.form-label svg {
+  color: var(--color-primary);
+}
+
+.hint-badge {
+  font-size: var(--text-xs);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-weight: 500;
+}
+
+.loading-members,
+.empty-followers {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  color: var(--color-text-muted);
+  gap: var(--space-md);
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--color-border);
+}
+
+.empty-followers .empty-icon {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+.empty-followers p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.invite-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  background: #FFFFFF;
+  border: 1px solid var(--color-border-light);
+}
+
+.invite-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border-bottom: 1px solid var(--color-border-light);
+  position: relative;
+}
+
+.invite-item:last-child {
+  border-bottom: none;
+}
+
+.invite-item:hover:not(.disabled) {
+  background: var(--color-bg-soft);
+}
+
+.invite-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.invite-item .member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 2px solid var(--color-border);
+}
+
+.invite-item .member-name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.member-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.member-info {
+  flex: 1;
+}
+
+.already-member {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--color-bg-soft);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.check-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  color: transparent;
+}
+
+.check-icon.checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.selected-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-md);
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-md);
+}
+
+.selected-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.selected-count {
   font-size: var(--text-lg);
   font-weight: 700;
-  margin-bottom: var(--space-4);
+  color: var(--color-primary);
+}
+
+.selected-unit {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-xl);
+  border-top: 1px solid var(--color-border-light);
+  background: #F8FAFC;
+}
+
+.btn {
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #FFFFFF;
+  color: var(--color-text);
+  border: 2px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--color-text-muted);
+}
+
+.members-modal {
+  max-width: 450px;
 }
 
 .members-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  max-height: 300px;
+  overflow-y: auto;
 }
 
-.member-item {
+.members-list .member-item {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2);
-  border-radius: var(--radius-md);
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border-light);
 }
 
-.member-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
+.members-list .member-item:hover {
+  background: #F8FAFC;
+}
+
+.members-list .member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
   object-fit: cover;
-  border: 1px solid var(--color-border);
+  border: 2px solid var(--color-border);
 }
 
-.member-name {
+.members-list .member-info {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.members-list .member-name {
   font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.members-list .member-role {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
   font-weight: 500;
 }
 
-.member-role {
-  font-size: var(--text-xs);
+.members-list .member-role.owner {
+  background: var(--color-primary-soft);
   color: var(--color-primary);
-  background-color: var(--color-primary-soft);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
+.btn-danger {
+  background: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.btn-danger:hover {
+  background: var(--color-error);
+  color: white;
+}
+
+.btn-sm {
+  padding: var(--space-1) var(--space-md);
+  font-size: var(--text-xs);
+}
+
+.ui-button-sm {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.ui-button-danger {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.ui-button-danger:hover {
+  background: var(--color-error);
+  color: white;
 }
 </style>

@@ -31,21 +31,18 @@
 
     <div class="events-container">
       <div class="events-toolbar">
-        <div class="stats-bar">
-          <div class="stat-item">
-            <span class="stat-value">{{ events.length }}</span>
-            <span class="stat-label">赛事总数</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <span class="stat-value">{{ registeringCount }}</span>
-            <span class="stat-label">报名中</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <span class="stat-value">{{ inProgressCount }}</span>
-            <span class="stat-label">进行中</span>
-          </div>
+        <div class="filter-tabs">
+          <button 
+            v-for="f in statusFilters" 
+            :key="f.value" 
+            class="filter-tab" 
+            :class="{ 'filter-tab-active': activeFilter === f.value }"
+            @click="setFilter(f.value)"
+          >
+            {{ f.label }}
+            <span v-if="f.value === 'all'" class="filter-count">{{ events.length }}</span>
+            <span v-else-if="getCountByStatus(f.value)" class="filter-count">{{ getCountByStatus(f.value) }}</span>
+          </button>
         </div>
         <button class="refresh-btn" @click="loadEvents" :disabled="loading">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spinning': loading }">
@@ -76,7 +73,7 @@
 
       <div v-else class="events-grid">
         <router-link
-          v-for="(evt, index) in events"
+          v-for="(evt, index) in filteredEvents"
           :key="evt.id"
           :to="`/event/${evt.id}`"
           class="event-card"
@@ -179,6 +176,51 @@ const page = ref(0)
 const size = 10
 const hasMore = ref(true)
 const loadingMore = ref(false)
+const activeFilter = ref('all')
+
+const statusFilters = [
+  { value: 'all', label: '全部' },
+  { value: 'REGISTERING', label: '报名中' },
+  { value: 'IN_PROGRESS', label: '进行中' },
+  { value: 'PREPARING', label: '筹备中' },
+  { value: 'ENDED', label: '已结束' },
+  { value: 'CANCELLED', label: '已取消' }
+]
+
+const statusOrder = {
+  'REGISTERING': 1,
+  'IN_PROGRESS': 2,
+  'PREPARING': 3,
+  'ENDED': 4,
+  'CANCELLED': 5
+}
+
+function getCountByStatus(status) {
+  return events.value.filter(e => e.status === status).length
+}
+
+function setFilter(filter) {
+  activeFilter.value = filter
+}
+
+const filteredEvents = computed(() => {
+  let result = [...events.value]
+  
+  if (activeFilter.value !== 'all') {
+    result = result.filter(e => e.status === activeFilter.value)
+  }
+  
+  result.sort((a, b) => {
+    const orderA = statusOrder[a.status] || 99
+    const orderB = statusOrder[b.status] || 99
+    if (orderA !== orderB) {
+      return orderA - orderB
+    }
+    return new Date(b.startTime) - new Date(a.startTime)
+  })
+  
+  return result
+})
 
 const registeringCount = computed(() => events.value.filter(e => e.status === 'REGISTERING').length)
 const inProgressCount = computed(() => events.value.filter(e => e.status === 'IN_PROGRESS').length)
@@ -368,33 +410,54 @@ onMounted(() => {
   border: 1px solid var(--color-border-light);
 }
 
-.stats-bar {
+.filter-tabs {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
-.stats-bar .stat-item {
+.filter-tab {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-card);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.stat-value {
-  font-size: var(--text-xl);
-  font-weight: 700;
-  color: var(--color-text);
+.filter-tab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
-.stat-label {
+.filter-tab-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.1);
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  font-weight: 600;
 }
 
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: var(--color-border);
+.filter-tab-active .filter-count {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .refresh-btn {

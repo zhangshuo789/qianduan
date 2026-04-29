@@ -52,7 +52,7 @@
               class="message-wrapper"
               :class="{ 'message-self': msg.senderId === currentUserId }"
             >
-              <div 
+              <div
                 class="message-item"
                 :class="{
                   'message-first': msgIndex === 0,
@@ -61,11 +61,12 @@
                   'message-single': group.messages.length === 1
                 }"
               >
-                <div v-if="msg.senderId !== currentUserId && (msgIndex === 0 || msg.isFirstInGroup)" class="message-avatar">
-                  <img :src="chatUser.processedAvatar || defaultAvatar" alt="头像" />
+                <div v-if="msgIndex === 0 || msg.isFirstInGroup" class="message-avatar">
+                  <img v-if="msg.senderId === currentUserId" :src="myAvatar || defaultAvatar" alt="我的头像" />
+                  <img v-else :src="chatUser.processedAvatar || defaultAvatar" alt="头像" />
                 </div>
-                <div v-else-if="msg.senderId !== currentUserId" class="message-avatar-placeholder"></div>
-                
+                <div v-else class="message-avatar-placeholder"></div>
+
                 <div class="message-body">
                   <div class="message-bubble">
                     <p class="message-text">{{ msg.content }}</p>
@@ -122,7 +123,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message as messageApi, user as userApi, getAvatarUrl, getUser } from '@/api'
+import { message as messageApi, user as userApi, getAvatarUrl, getUser, DEFAULT_AVATAR } from '@/api'
 import { toastBus } from '@/utils/toast'
 
 const route = useRoute()
@@ -132,8 +133,9 @@ const newMessage = ref('')
 const loading = ref(true)
 const sending = ref(false)
 const messagesContainer = ref(null)
-const defaultAvatar = 'https://via.placeholder.com/36'
+const defaultAvatar = DEFAULT_AVATAR
 const currentUserId = ref(null)
+const myAvatar = ref('')
 const chatUser = ref(null)
 
 const chatUserId = computed(() => route.params.userId)
@@ -283,6 +285,11 @@ onMounted(() => {
   if (!isValidUserId(chatUserId.value)) return
   const user = getUser()
   currentUserId.value = user?.id
+  if (user?.avatar) {
+    getAvatarUrl(user.avatar).then(url => {
+      myAvatar.value = url || defaultAvatar
+    })
+  }
   loadChatUser()
   loadMessages()
   window.addEventListener('sse:newMessage', handleNewMessage)

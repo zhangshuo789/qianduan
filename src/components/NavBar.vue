@@ -30,6 +30,14 @@
           </svg>
           <span>个人中心</span>
         </router-link>
+        <router-link to="/ai-chat" class="nav-link">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+          <span>AI助手</span>
+        </router-link>
         <router-link v-if="isAdmin" to="/admin/overview" class="nav-link nav-link-admin">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
@@ -145,7 +153,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUser, clearAuth, getAvatarUrl, message as messageApi } from '@/api'
+import { useUser, clearAuth, getAvatarUrl, message as messageApi, DEFAULT_AVATAR } from '@/api'
 
 const router = useRouter()
 const userRef = useUser()
@@ -153,8 +161,8 @@ const user = computed(() => userRef.value)
 const isAdmin = computed(() => user.value?.isAdmin === true)
 const keyword = ref('')
 const menuVisible = ref(false)
-const defaultAvatar = 'https://via.placeholder.com/40'
-const displayAvatar = ref(defaultAvatar)
+const defaultAvatar = DEFAULT_AVATAR
+const displayAvatar = ref(DEFAULT_AVATAR)
 const unreadCount = ref(0)
 
 async function loadUnreadCount() {

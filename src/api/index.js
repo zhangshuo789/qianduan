@@ -1,5 +1,13 @@
 const API_BASE = '/api'
 
+export const DEFAULT_AVATAR = 'data:image/svg+xml,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="#e0e0e0"/>
+  <circle cx="32" cy="24" r="10" fill="#a0a0a0"/>
+  <path d="M16 56c0-10 7-16 16-16s16 6 16 16" fill="#a0a0a0"/>
+</svg>
+`)
+
 function getHeaders(options) {
   const token = localStorage.getItem('token')
   const headers = {
@@ -217,34 +225,52 @@ export const message = {
 
 export const group = {
   create(data) {
-    return request('/group', { method: 'POST', body: JSON.stringify(data) })
+    return request('/groups', { method: 'POST', body: JSON.stringify(data) })
   },
   getInfo(id) {
-    return request(`/group/${id}`)
+    return request(`/groups/${id}`)
+  },
+  update(id, data) {
+    return request(`/groups/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  },
+  updateAvatar(id, avatarFileId) {
+    return request(`/groups/${id}/avatar?avatarFileId=${avatarFileId}`, { method: 'PUT' })
+  },
+  dissolve(id) {
+    return request(`/groups/${id}`, { method: 'DELETE' })
+  },
+  getMyGroups(page = 0, size = 10) {
+    return request(`/groups/my?page=${page}&size=${size}`)
   },
   getMembers(id) {
-    return request(`/group/${id}/members`)
+    return request(`/groups/${id}/members`)
   },
   addMember(groupId, userId) {
-    return request(`/group/${groupId}/members?userId=${userId}`, { method: 'POST' })
+    return request(`/groups/${groupId}/members?userId=${userId}`, { method: 'POST' })
   },
   removeMember(groupId, userId) {
-    return request(`/group/${groupId}/members/${userId}`, { method: 'DELETE' })
+    return request(`/groups/${groupId}/members/${userId}`, { method: 'DELETE' })
   },
   leave(groupId, userId) {
-    return request(`/group/${groupId}/members/${userId}/leave`, { method: 'POST' })
+    return request(`/groups/${groupId}/members/${userId}/leave`, { method: 'POST' })
   },
   banMember(groupId, userId) {
-    return request(`/group/${groupId}/ban/${userId}`, { method: 'POST' })
+    return request(`/groups/${groupId}/members/${userId}/ban`, { method: 'POST' })
   },
   unbanMember(groupId, userId) {
-    return request(`/group/${groupId}/unban/${userId}`, { method: 'DELETE' })
+    return request(`/groups/${groupId}/members/${userId}/unban`, { method: 'DELETE' })
+  },
+  setAdmin(groupId, userId, setAdmin = true) {
+    return request(`/groups/${groupId}/members/${userId}/admin?setAdmin=${setAdmin}`, { method: 'POST' })
+  },
+  transfer(groupId, newOwnerId) {
+    return request(`/groups/${groupId}/transfer?newOwnerId=${newOwnerId}`, { method: 'POST' })
   },
   getMessages(groupId, page = 0, size = 20) {
-    return request(`/group/${groupId}/messages?page=${page}&size=${size}`)
+    return request(`/groups/${groupId}/messages?page=${page}&size=${size}`)
   },
   sendMessage(groupId, content) {
-    return request(`/group/${groupId}/messages`, {
+    return request(`/groups/${groupId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ content })
     })
@@ -404,9 +430,13 @@ export const admin = {
 
   // 管理通知
   sendNotification(data) {
+    const body = { title: data.title, content: data.content }
+    if (data.targetUserId) {
+      body.targetUserId = data.targetUserId
+    }
     return request(`/admin/notification/send?type=${data.type || 'BROADCAST'}&persist=${data.persist !== false}`, {
       method: 'POST',
-      body: JSON.stringify({ title: data.title, content: data.content })
+      body: JSON.stringify(body)
     })
   },
   getNotificationList() {
@@ -420,6 +450,44 @@ export const admin = {
   },
   markAllNotificationsRead() {
     return request('/admin/notification/read-all', { method: 'PUT' })
+  }
+}
+
+export const ai = {
+  // 创建会话
+  createConversation() {
+    return request('/ai/conversations', { method: 'POST' })
+  },
+  // 获取会话列表
+  getConversations() {
+    return request('/ai/conversations')
+  },
+  // 删除会话
+  deleteConversation(id) {
+    return request(`/ai/conversations/${id}`, { method: 'DELETE' })
+  },
+  // 获取历史消息
+  getMessages(conversationId) {
+    return request(`/ai/conversations/${conversationId}/messages`)
+  },
+  // 发送消息（非流式）
+  sendMessage(conversationId, content, thinking = false) {
+    return request(`/ai/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content, thinking, stream: false })
+    })
+  },
+  // 流式发送消息 (返回 fetch Response)
+  sendMessageStream(conversationId, content, thinking = false) {
+    const token = localStorage.getItem('token')
+    return fetch(`/api/ai/conversations/${conversationId}/messages/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ content, thinking, stream: true })
+    })
   }
 }
 

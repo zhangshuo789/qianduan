@@ -13,7 +13,13 @@
           <label class="form-label">头像</label>
           <div class="avatar-upload">
             <div class="avatar-preview">
-              {{ form.nickname ? form.nickname.charAt(0).toUpperCase() : '?' }}
+              <img v-if="avatarPreview" :src="avatarPreview" alt="头像预览" />
+              <div v-else class="avatar-placeholder">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
             </div>
             <div class="avatar-actions">
               <input
@@ -24,7 +30,7 @@
                 class="file-input"
               />
               <button type="button" class="avatar-upload-btn" @click="triggerFileInput">
-                {{ uploadingAvatar ? '上传中...' : '选择图片' }}
+                {{ uploadingAvatar ? '上传中...' : '更换头像' }}
               </button>
               <p class="upload-tip">支持 JPG、PNG 格式，最大 10MB</p>
             </div>
@@ -55,7 +61,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { user as userApi, file as fileApi, getUser, getAvatarUrl } from '@/api'
+import { user as userApi, file as fileApi, getUser, getAvatarUrl, DEFAULT_AVATAR } from '@/api'
 
 const router = useRouter()
 const user = getUser()
@@ -64,7 +70,7 @@ if (!user) {
   router.push('/login')
 }
 
-const defaultAvatar = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Ccircle cx="32" cy="32" r="32" fill="%23FF6B35"/%3E%3Ctext x="32" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold"%3E%3F%3C/text%3E%3C/svg%3E'
+const defaultAvatar = DEFAULT_AVATAR
 
 const loading = ref(false)
 const uploadingAvatar = ref(false)
@@ -223,16 +229,25 @@ async function handleSubmit() {
 }
 
 .avatar-preview {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background: var(--color-primary);
-  color: white;
+  background: var(--color-bg-soft);
+  border: 2px dashed var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: var(--text-xl);
+  overflow: hidden;
+}
+
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  color: var(--color-text-muted);
 }
 
 .avatar-upload-btn {

@@ -48,25 +48,25 @@
       <div class="right">
         <div class="right-card user-card" v-if="user">
           <div class="user-section">
-            <div class="user-avatar-wrapper">
+            <router-link :to="`/user/${user.id}`" class="user-avatar-link">
               <img :src="displayAvatar" class="user-avatar" />
               <div class="user-status"></div>
-            </div>
+            </router-link>
             <div class="user-details">
-              <div class="user-name">{{ user.nickname }}</div>
+              <router-link :to="`/user/${user.id}`" class="user-name-link">{{ user.nickname }}</router-link>
               <div class="user-stats">
-                <div class="stat-item">
+                <router-link :to="`/user/${user.id}?tab=posts`" class="stat-item stat-item-link">
                   <span class="stat-value">{{ stats.postCount || 0 }}</span>
                   <span class="stat-label">文章</span>
-                </div>
-                <div class="stat-item">
+                </router-link>
+                <router-link :to="`/user/${user.id}?tab=following`" class="stat-item stat-item-link">
                   <span class="stat-value">{{ stats.followCount || 0 }}</span>
                   <span class="stat-label">关注</span>
-                </div>
-                <div class="stat-item">
+                </router-link>
+                <router-link :to="`/user/${user.id}?tab=followers`" class="stat-item stat-item-link">
                   <span class="stat-value">{{ stats.followerCount || 0 }}</span>
                   <span class="stat-label">粉丝</span>
-                </div>
+                </router-link>
               </div>
             </div>
           </div>
@@ -166,14 +166,14 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
-import { board, user as userApi, useUser, getAvatarUrl } from '@/api'
+import { board, user as userApi, useUser, getAvatarUrl, DEFAULT_AVATAR } from '@/api'
 
 const boards = ref([])
 const loading = ref(true)
 const userRef = useUser()
 const user = computed(() => userRef.value)
-const defaultAvatar = 'https://via.placeholder.com/40'
-const displayAvatar = ref(defaultAvatar)
+const defaultAvatar = DEFAULT_AVATAR
+const displayAvatar = ref(DEFAULT_AVATAR)
 const stats = ref({ postCount: 0, followCount: 0, followerCount: 0 })
 
 async function updateDisplayAvatar() {
@@ -223,7 +223,7 @@ onMounted(async () => {
 }
 
 .home-hero {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  background: var(--color-primary);
   padding: var(--space-12) var(--space-lg);
   margin-bottom: var(--space-lg);
 }
@@ -316,11 +316,11 @@ onMounted(async () => {
   color: white;
 }
 
-.board-icon-1 { background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 100%); }
-.board-icon-2 { background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%); }
-.board-icon-3 { background: linear-gradient(135deg, #10B981 0%, #34D399 100%); }
-.board-icon-4 { background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); }
-.board-icon-5 { background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%); }
+.board-icon-1 { background: #FF6B35; }
+.board-icon-2 { background: #6366F1; }
+.board-icon-3 { background: #10B981; }
+.board-icon-4 { background: #F59E0B; }
+.board-icon-5 { background: #EC4899; }
 
 .board-content {
   flex: 1;
@@ -378,7 +378,7 @@ onMounted(async () => {
 }
 
 .user-card {
-  background: linear-gradient(135deg, var(--color-card) 0%, var(--color-bg-soft) 100%);
+  background: var(--color-card);
 }
 
 .user-section {
@@ -390,6 +390,17 @@ onMounted(async () => {
 
 .user-avatar-wrapper {
   position: relative;
+}
+
+.user-avatar-link {
+  display: block;
+  position: relative;
+  border-radius: var(--radius-full);
+  transition: transform var(--transition-fast);
+}
+
+.user-avatar-link:hover {
+  transform: scale(1.05);
 }
 
 .user-avatar {
@@ -416,11 +427,18 @@ onMounted(async () => {
   flex: 1;
 }
 
-.user-name {
+.user-name-link {
+  display: block;
   font-size: var(--text-lg);
   font-weight: 600;
   color: var(--color-text);
   margin-bottom: var(--space-2);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.user-name-link:hover {
+  color: var(--color-primary);
 }
 
 .user-stats {
@@ -432,6 +450,22 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.stat-item-link {
+  text-decoration: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.stat-item-link:hover {
+  background: var(--color-bg-soft);
+}
+
+.stat-item-link:hover .stat-value,
+.stat-item-link:hover .stat-label {
+  color: var(--color-primary);
 }
 
 .stat-value {
@@ -540,10 +574,10 @@ onMounted(async () => {
   color: white;
 }
 
-.feature-icon-1 { background: linear-gradient(135deg, #FF6B35 0%, #FF8A5C 100%); }
-.feature-icon-2 { background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%); }
-.feature-icon-3 { background: linear-gradient(135deg, #10B981 0%, #34D399 100%); }
-.feature-icon-4 { background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); }
+.feature-icon-1 { background: #FF6B35; }
+.feature-icon-2 { background: #6366F1; }
+.feature-icon-3 { background: #10B981; }
+.feature-icon-4 { background: #F59E0B; }
 
 .hot-list {
   min-height: 100px;

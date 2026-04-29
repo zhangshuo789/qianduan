@@ -1,6 +1,6 @@
 <template>
   <div class="app-shell">
-    <NavBar />
+    <NavBar v-if="userLoaded" />
     <main class="app-main">
       <router-view />
     </main>
@@ -9,13 +9,34 @@
 </template>
 
 <script setup>
-import { onUnmounted, provide, watch } from 'vue'
+import { ref, onUnmounted, provide, watch } from 'vue'
 import NavBar from '@/components/NavBar.vue'
 import Toast from '@/components/Toast.vue'
-import { connectSSE, disconnectSSE, useUser } from '@/api'
+import { connectSSE, disconnectSSE, useUser, user as userApi, setAuth } from '@/api'
 import { toastBus } from '@/utils/toast'
 
 const user = useUser()
+const userLoaded = ref(false)
+
+// 应用启动时获取最新用户信息
+async function fetchCurrentUserInfo() {
+  const currentUser = user.value
+  if (currentUser?.id) {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await userApi.getInfo(currentUser.id)
+      if (res.data) {
+        setAuth(token, {
+          ...res.data,
+          isAdmin: currentUser.isAdmin
+        })
+      }
+    } catch (e) {
+      console.error('获取用户信息失败', e)
+    }
+  }
+  userLoaded.value = true
+}
 
 function handleNewMessage(data) {
   console.log('SSE newMessage event:', data)
@@ -67,6 +88,9 @@ watch(user, (newUser) => {
     disconnectSSE()
   }
 }, { immediate: true })
+
+// 首次加载时获取最新用户信息
+fetchCurrentUserInfo()
 
 onUnmounted(() => {
   disconnectSSE()

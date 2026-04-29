@@ -12,7 +12,8 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(ls -la D:/WebProject/volleyball-community-frontend/*.md)",
-      "Bash(dir D:\\\\WebProject\\\\volleyball-community-frontend\\\\*.md /b)"
+      "Bash(dir D:\\\\WebProject\\\\volleyball-community-frontend\\\\*.md /b)",
+      "Bash(chmod +x:*)"
     ]
   }
 }

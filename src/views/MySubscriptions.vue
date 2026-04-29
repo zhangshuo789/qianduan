@@ -184,7 +184,7 @@ onMounted(() => {
 .header-icon {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+  background: #ff6b6b;
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
