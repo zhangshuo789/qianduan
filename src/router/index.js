@@ -24,6 +24,7 @@ import AdminGroups from '@/views/AdminGroups.vue'
 import AdminSettings from '@/views/AdminSettings.vue'
 import AIChat from '@/views/AIChat.vue'
 import NotificationDetail from '@/views/NotificationDetail.vue'
+const KnowledgeGraph = () => import('@/views/KnowledgeGraph.vue')
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -44,6 +45,7 @@ const routes = [
   { path: '/create-event', name: 'CreateEvent', component: CreateEvent },
   { path: '/my-subscriptions', name: 'MySubscriptions', component: MySubscriptions },
   { path: '/notifications', name: 'NotificationDetail', component: NotificationDetail },
+  { path: '/knowledge-graph', name: 'KnowledgeGraph', component: KnowledgeGraph },
   { path: '/ai-chat', name: 'AIChat', component: AIChat },
   {
     path: '/admin',

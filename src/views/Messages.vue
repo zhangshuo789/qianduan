@@ -32,7 +32,7 @@
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
             </svg>
           </button>
-          <button v-if="validNotifications.length > 0" class="action-btn" @click="markAllRead" title="全部已读">
+          <button v-if="unreadNotifCount > 0" class="action-btn" @click="markAllRead" title="全部已读">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="9 11 12 14 22 4"/>
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
@@ -79,7 +79,7 @@
             </div>
             <div class="conversation-preview">
               <span class="preview-text">{{ latestNotification.title || '系统通知' }}：{{ latestNotification.content || latestNotification.message }}</span>
-              <span class="unread-badge notif-unread-badge">{{ validNotifications.length > 99 ? '99+' : validNotifications.length }}</span>
+              <span v-if="unreadNotifCount > 0" class="unread-badge notif-unread-badge">{{ unreadNotifCount > 99 ? '99+' : unreadNotifCount }}</span>
             </div>
           </div>
           <div class="conversation-arrow">
@@ -293,6 +293,54 @@ const followers = ref([])
 const loadingFollowers = ref(false)
 const creatingGroup = ref(false)
 
+// ========== 通知本地已读缓存 ==========
+const NOTIF_READ_KEY = 'notif_read_ids'
+
+function getNotifId(n) {
+  return n?.id || n?.eventId || ''
+}
+
+function loadLocalReadIds() {
+  try {
+    const raw = localStorage.getItem(NOTIF_READ_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveLocalReadIds(ids) {
+  localStorage.setItem(NOTIF_READ_KEY, JSON.stringify(ids))
+}
+
+function markLocalRead(notifId) {
+  const ids = loadLocalReadIds()
+  if (!ids.includes(notifId)) {
+    ids.push(notifId)
+    saveLocalReadIds(ids)
+  }
+}
+
+function markAllLocalRead(notifications) {
+  const ids = loadLocalReadIds()
+  let changed = false
+  for (const n of notifications) {
+    const nid = getNotifId(n)
+    if (nid && !ids.includes(nid)) {
+      ids.push(nid)
+      changed = true
+    }
+  }
+  if (changed) saveLocalReadIds(ids)
+}
+
+// 将 API 通知列表与本地已读状态合并，返回带 read 标记的列表
+function mergeReadStatus(list) {
+  const readIds = loadLocalReadIds()
+  return list.map(n => ({
+    ...n,
+    read: readIds.includes(getNotifId(n))
+  }))
+}
+
 const validNotifications = computed(() => {
   if (!Array.isArray(notifications.value)) return []
   return notifications.value.filter(n => {
@@ -303,9 +351,13 @@ const validNotifications = computed(() => {
   })
 })
 
+// 未读通知数
+const unreadNotifCount = computed(() => {
+  return validNotifications.value.filter(n => !n.read).length
+})
+
 const latestNotification = computed(() => {
   if (validNotifications.value.length === 0) return null
-  // 返回最新的一条（按时间倒序取第一条，即列表第一个）
   const sorted = [...validNotifications.value].sort(
     (a, b) => new Date(b.createdAt || b.sentAt) - new Date(a.createdAt || a.sentAt)
   )
@@ -361,12 +413,14 @@ async function loadNotifications() {
         return
       }
     }
-    notifications.value = list.filter(n => {
+    const filtered = list.filter(n => {
       if (!n) return false
       const hasTitle = n.title && n.title.trim()
       const hasContent = (n.content && n.content.trim()) || (n.message && n.message.trim())
       return hasTitle || hasContent
     })
+    // 合并本地已读状态
+    notifications.value = mergeReadStatus(filtered)
   } catch (e) {
     console.error('加载通知列表失败:', e)
     notifications.value = []
@@ -450,22 +504,24 @@ async function handleRefresh() {
 async function markAllRead() {
   if (validNotifications.value.length === 0) return
 
+  // 先写本地缓存
+  markAllLocalRead(validNotifications.value)
+  // 更新内存中的 read 标记
+  notifications.value = notifications.value.map(n => ({ ...n, read: true }))
+
+  // 异步调用后端接口（不阻塞 UI）
   try {
     await admin.markAllNotificationsRead()
-    notifications.value = []
-    toastBus.success('已全部标记为已读')
   } catch (e) {
-    // 如果批量接口不可用，逐个标记已读
+    // 批量接口不可用时逐个标记
     try {
-      const ids = validNotifications.value.map(n => n.id || n.eventId).filter(Boolean)
+      const ids = validNotifications.value.map(n => getNotifId(n)).filter(Boolean)
       await Promise.all(ids.map(id => admin.markNotificationRead(id)))
-      notifications.value = []
-      toastBus.success('已全部标记为已读')
     } catch (e2) {
-      console.error('批量标记已读失败:', e2)
-      toastBus.error('操作失败')
+      console.error('后端标记已读失败:', e2)
     }
   }
+  toastBus.success('已全部标记为已读')
 }
 
 function handleNewMessage(event) {
@@ -532,6 +588,8 @@ function addNotification(data, type = 'broadcast') {
     return
   }
 
+  const readIds = loadLocalReadIds()
+
   notifications.value.unshift({
     id: id,
     eventId: data.eventId,
@@ -539,7 +597,7 @@ function addNotification(data, type = 'broadcast') {
     content: data.content || data.message,
     type: type,
     createdAt: data.sentAt || data.createdAt || new Date().toISOString(),
-    read: false
+    read: readIds.includes(id)
   })
 }
 

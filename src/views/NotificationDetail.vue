@@ -9,7 +9,10 @@
         </router-link>
         <div class="notif-header-info">
           <h1 class="notif-title">通知收件箱</h1>
-          <p class="notif-subtitle" v-if="notifications.length">{{ notifications.length }} 条通知</p>
+          <p class="notif-subtitle" v-if="notifications.length">
+            {{ notifications.length }} 条通知
+            <span v-if="unreadCount > 0" class="unread-dot">{{ unreadCount }} 条未读</span>
+          </p>
         </div>
         <button v-if="notifications.length > 0" class="mark-all-btn" @click="markAllRead">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -46,7 +49,8 @@
               v-for="notif in group.items"
               :key="notif.uniqueId"
               class="notif-item ui-card"
-              :class="`notif-type-${notif.type}`"
+              :class="[`notif-type-${notif.type}`, { 'notif-unread': !notif.read }]"
+              @click="markOneRead(notif)"
             >
               <div class="notif-icon" :class="`icon-type-${notif.type}`">
                 <span v-if="notif.type === 'broadcast'">📢</span>
@@ -77,6 +81,37 @@ import { admin } from '@/api'
 
 const loading = ref(true)
 const notifications = ref([])
+
+// ========== 通知本地已读缓存 ==========
+const NOTIF_READ_KEY = 'notif_read_ids'
+
+function getNotifId(n) {
+  return n?.id || n?.eventId || ''
+}
+
+function loadLocalReadIds() {
+  try {
+    const raw = localStorage.getItem(NOTIF_READ_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveLocalReadIds(ids) {
+  localStorage.setItem(NOTIF_READ_KEY, JSON.stringify(ids))
+}
+
+// 将 API 通知列表与本地已读状态合并
+function mergeReadStatus(list) {
+  const readIds = loadLocalReadIds()
+  return list.map(n => ({
+    ...n,
+    read: readIds.includes(getNotifId(n))
+  }))
+}
+
+const unreadCount = computed(() => {
+  return notifications.value.filter(n => !n.read).length
+})
 
 const groupedNotifications = computed(() => {
   if (!notifications.value.length) return []
@@ -140,10 +175,12 @@ async function loadNotifications() {
     if (!Array.isArray(list)) {
       list = list.content || []
     }
-    notifications.value = list.filter(n => {
+    const filtered = list.filter(n => {
       if (!n) return false
       return (n.title && n.title.trim()) || (n.content && n.content.trim()) || (n.message && n.message.trim())
     })
+    // 合并本地已读状态
+    notifications.value = mergeReadStatus(filtered)
   } catch (e) {
     console.error('加载通知失败:', e)
     notifications.value = []
@@ -152,12 +189,48 @@ async function loadNotifications() {
   }
 }
 
+function markOneRead(notif) {
+  if (notif.read) return
+  const nid = getNotifId(notif)
+  if (!nid) return
+
+  // 更新本地缓存
+  const ids = loadLocalReadIds()
+  if (!ids.includes(nid)) {
+    ids.push(nid)
+    saveLocalReadIds(ids)
+  }
+  // 更新内存
+  const idx = notifications.value.findIndex(n => getNotifId(n) === nid)
+  if (idx >= 0) {
+    notifications.value[idx] = { ...notifications.value[idx], read: true }
+  }
+  // 后台调 API
+  admin.markNotificationRead(nid).catch(() => {})
+}
+
 async function markAllRead() {
+  if (notifications.value.length === 0) return
+
+  // 写本地缓存
+  const ids = loadLocalReadIds()
+  let changed = false
+  for (const n of notifications.value) {
+    const nid = getNotifId(n)
+    if (nid && !ids.includes(nid)) {
+      ids.push(nid)
+      changed = true
+    }
+  }
+  if (changed) saveLocalReadIds(ids)
+  // 更新内存
+  notifications.value = notifications.value.map(n => ({ ...n, read: true }))
+
+  // 异步调后端
   try {
     await admin.markAllNotificationsRead()
-    notifications.value = []
   } catch (e) {
-    console.error('全部已读失败:', e)
+    console.error('后端全部已读失败:', e)
   }
 }
 
@@ -396,6 +469,18 @@ onMounted(() => {
 .notif-time {
   font-size: 11px;
   color: var(--color-text-muted);
+}
+
+/* 未读通知高亮 */
+.notif-unread {
+  background: #fefce8;
+  border-left-width: 4px;
+}
+
+.unread-dot {
+  color: var(--color-error);
+  font-weight: 600;
+  margin-left: var(--space-3);
 }
 
 @media (max-width: 640px) {

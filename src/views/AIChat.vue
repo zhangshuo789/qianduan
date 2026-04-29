@@ -308,7 +308,7 @@ function autoResize(e) {
 }
 
 function goToKnowledgeGraph() {
-  toastBus.info('知识图谱功能正在开发中，敬请期待')
+  router.push('/knowledge-graph')
 }
 
 onMounted(async () => {

@@ -491,6 +491,66 @@ export const ai = {
   }
 }
 
+export const knowledge = {
+  // ===== 公开接口（无需登录）=====
+  // 获取球员图谱
+  getPlayerGraph(name) {
+    return request(`/knowledge/graph/player?name=${encodeURIComponent(name)}`)
+  },
+  // 获取球队图谱
+  getTeamGraph(name) {
+    return request(`/knowledge/graph/team?name=${encodeURIComponent(name)}`)
+  },
+  // 最短路径查询
+  getPath(fromName, toName) {
+    return request(`/knowledge/path?from=${encodeURIComponent(fromName)}&to=${encodeURIComponent(toName)}`)
+  },
+  // 搜索实体
+  searchEntities(keyword, type) {
+    let url = `/knowledge/entity/search?keyword=${encodeURIComponent(keyword)}`
+    if (type) url += `&type=${type}`
+    return request(url)
+  },
+  // 按类型浏览
+  listByType(type) {
+    return request(`/knowledge/type/${type}`)
+  },
+  // 实体详情
+  getEntityDetail(id) {
+    return request(`/knowledge/entity/${id}`)
+  },
+  // 获取实体类型列表
+  getTypes() {
+    return request('/knowledge/types')
+  },
+  // 获取关系类型列表
+  getRelationTypes() {
+    return request('/knowledge/relation-types')
+  },
+
+  // ===== 需登录接口 =====
+  // 创建实体
+  createEntity(data) {
+    return request('/knowledge/entity', { method: 'POST', body: JSON.stringify(data) })
+  },
+  // 更新实体
+  updateEntity(id, data) {
+    return request(`/knowledge/entity/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  },
+  // 删除实体
+  deleteEntity(id) {
+    return request(`/knowledge/entity/${id}`, { method: 'DELETE' })
+  },
+  // 创建关系
+  createRelation(data) {
+    return request('/knowledge/relation', { method: 'POST', body: JSON.stringify(data) })
+  },
+  // 删除关系
+  deleteRelation(fromId, toId, type) {
+    return request(`/knowledge/relation/${fromId}/${toId}/${type}`, { method: 'DELETE' })
+  }
+}
+
 // SSE 全局实例
 let eventSource = null
 let reconnectTimer = null
