@@ -15,37 +15,38 @@
             class="match-slot"
             :style="gridPos(ri, mi, 'match')"
           >
-            <!-- 左侧入线（非首轮） -->
-            <div v-if="ri > 0" class="line-in"></div>
+            <!-- 卡片 + 标签的包裹层，紧贴卡片大小 -->
+            <div class="match-card-wrap">
+              <!-- 左侧入线（非首轮） -->
+              <div v-if="ri > 0" class="line-in"></div>
 
-            <!-- 状态标签（放在卡片外，不被裁切） -->
-            <span v-if="match.status === 'BYE'" class="match-tag tag-bye">轮空</span>
-            <span v-else-if="match.status === 'PENDING' && canSetResult(match)" class="match-tag tag-ready">可操作</span>
+              <span v-if="match.status === 'BYE'" class="match-tag tag-bye">轮空</span>
+              <span v-else-if="match.status === 'PENDING' && canSetResult(match)" class="match-tag tag-ready">可操作</span>
 
-            <div
-              class="match-card"
-              :class="matchCardClass(match)"
-              @click="$emit('match-click', match)"
-            >
-              <div class="match-team" :class="teamClass(match, match.team1, match.winnerId)">
-                <span class="team-seed">{{ positionOf(match.team1) }}</span>
-                <span class="team-name">{{ match.team1?.teamName || '待定' }}</span>
-                <span v-if="match.score1 != null" class="team-score">{{ match.score1 }}</span>
+              <div
+                class="match-card"
+                :class="matchCardClass(match)"
+                @click="$emit('match-click', match)"
+              >
+                <div class="match-team" :class="teamClass(match, match.team1, match.winnerId)">
+                  <span class="team-seed">{{ positionOf(match.team1) }}</span>
+                  <span class="team-name">{{ match.team1?.teamName || '待定' }}</span>
+                  <span v-if="match.score1 != null" class="team-score">{{ match.score1 }}</span>
+                </div>
+                <div class="match-vs"></div>
+                <div class="match-team" :class="teamClass(match, match.team2, match.winnerId)">
+                  <span class="team-seed">{{ positionOf(match.team2) }}</span>
+                  <span class="team-name">{{ match.team2?.teamName || '待定' }}</span>
+                  <span v-if="match.score2 != null" class="team-score">{{ match.score2 }}</span>
+                </div>
               </div>
-              <div class="match-vs"></div>
-              <div class="match-team" :class="teamClass(match, match.team2, match.winnerId)">
-                <span class="team-seed">{{ positionOf(match.team2) }}</span>
-                <span class="team-name">{{ match.team2?.teamName || '待定' }}</span>
-                <span v-if="match.score2 != null" class="team-score">{{ match.score2 }}</span>
-              </div>
+
+              <!-- 右侧出线（非末轮） -->
+              <div v-if="ri < rounds.length - 1" class="line-out"></div>
             </div>
 
-            <!-- 右侧出线（非末轮） -->
-            <div v-if="ri < rounds.length - 1" class="line-out"></div>
-
-            <!-- 垂直连接线：出侧（非末轮） -->
-            <div v-if="ri < rounds.length - 1 && mi % 2 === 0" class="line-v line-v-top" :style="vLineStyle"></div>
-            <div v-if="ri < rounds.length - 1 && mi % 2 === 1" class="line-v line-v-bottom" :style="vLineStyle"></div>
+            <!-- 垂直连接线：配对两场的右中到下一场的左中 -->
+            <div v-if="ri < rounds.length - 1 && mi % 2 === 0" class="line-v" :style="vLineStyle(ri)"></div>
           </div>
         </template>
       </div>
@@ -114,9 +115,12 @@ function gridPos(ri, mi, type) {
   }
 }
 
-const vLineStyle = computed(() => {
-  return { height: baseRow + 'px' }
-})
+function vLineStyle(ri) {
+  // 一对 match 的垂直间距：从当前 match 中心到下一个 match 中心
+  const span = Math.pow(2, ri)
+  const slotH = baseRow * span
+  return { height: slotH + 'px' }
+}
 
 function positionOf(team) {
   if (!team) return ''
@@ -196,6 +200,12 @@ function canSetResult(match) {
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+/* 卡片包裹层，紧贴卡片，用于标签定位 */
+.match-card-wrap {
+  position: relative;
+  flex-shrink: 0;
 }
 
 /* 比赛卡片 */
@@ -332,18 +342,17 @@ function canSetResult(match) {
   color: var(--color-text-muted);
 }
 
-/* 状态标签（相对于 .match-slot 定位） */
+/* 状态标签（相对于 .match-card-wrap 定位，紧贴卡片右上角） */
 .match-tag {
   position: absolute;
-  top: 0;
-  right: 18px;
+  top: -8px;
+  right: 6px;
   padding: 1px 8px;
   border-radius: var(--radius-full);
   font-size: 10px;
   font-weight: 700;
   z-index: 3;
   letter-spacing: 0.3px;
-  transform: translateY(-50%);
 }
 
 .tag-bye {
@@ -381,20 +390,11 @@ function canSetResult(match) {
 
 .line-v {
   position: absolute;
-  right: -17px;
+  left: calc(50% + 88px + 15px);
+  top: 50%;
   width: 2px;
   background: var(--color-border);
   z-index: 1;
-}
-
-.line-v-top {
-  top: 50%;
-  transform: translateY(-1px);
-}
-
-.line-v-bottom {
-  bottom: 50%;
-  transform: translateY(1px);
 }
 
 @media (max-width: 768px) {
