@@ -103,12 +103,12 @@
               @click="handleStartBracket"
             >{{ actionLoading ? '开赛中...' : '手动开赛' }}</button>
             <button
-              v-if="event.status === 'REGISTERING' || event.status === 'IN_PROGRESS'"
+              v-if="event.status === 'REGISTERING'"
               class="ui-button ui-button-ghost"
               @click="showAddTeamModal = true"
             >添加队伍</button>
             <button
-              v-if="event.status === 'REGISTERING' || event.status === 'IN_PROGRESS'"
+              v-if="event.status === 'REGISTERING'"
               class="ui-button ui-button-ghost"
               :disabled="actionLoading"
               @click="handleRebuildBracket"

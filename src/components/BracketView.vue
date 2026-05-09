@@ -18,6 +18,10 @@
             <!-- 左侧入线（非首轮） -->
             <div v-if="ri > 0" class="line-in"></div>
 
+            <!-- 状态标签（放在卡片外，不被裁切） -->
+            <span v-if="match.status === 'BYE'" class="match-tag tag-bye">轮空</span>
+            <span v-else-if="match.status === 'PENDING' && canSetResult(match)" class="match-tag tag-ready">可操作</span>
+
             <div
               class="match-card"
               :class="matchCardClass(match)"
@@ -34,8 +38,6 @@
                 <span class="team-name">{{ match.team2?.teamName || '待定' }}</span>
                 <span v-if="match.score2 != null" class="team-score">{{ match.score2 }}</span>
               </div>
-              <span v-if="match.status === 'BYE'" class="match-tag tag-bye">轮空</span>
-              <span v-else-if="match.status === 'PENDING' && canSetResult(match)" class="match-tag tag-ready">可操作</span>
             </div>
 
             <!-- 右侧出线（非末轮） -->
@@ -330,17 +332,18 @@ function canSetResult(match) {
   color: var(--color-text-muted);
 }
 
-/* 状态标签 */
+/* 状态标签（相对于 .match-slot 定位） */
 .match-tag {
   position: absolute;
-  top: -9px;
-  right: 6px;
+  top: 0;
+  right: 18px;
   padding: 1px 8px;
   border-radius: var(--radius-full);
   font-size: 10px;
   font-weight: 700;
   z-index: 3;
   letter-spacing: 0.3px;
+  transform: translateY(-50%);
 }
 
 .tag-bye {
