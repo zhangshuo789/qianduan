@@ -38,6 +38,7 @@
           <div class="event-card-header">
             <span class="event-badge badge-format">{{ formatLabel(ev.format) }}</span>
             <span class="event-badge" :class="'badge-' + ev.status?.toLowerCase()">{{ statusLabel(ev.status) }}</span>
+            <span v-if="ev.hasRegistered" class="event-badge badge-registered">&#10003; 已报名</span>
           </div>
           <h3 class="event-card-title">{{ ev.title }}</h3>
           <div class="event-card-meta">
@@ -287,6 +288,11 @@ onMounted(() => {
 .badge-cancelled {
   background: #fff1f0;
   color: #ff4d4f;
+}
+
+.badge-registered {
+  background: #f6ffed;
+  color: #52c41a;
 }
 
 .event-card-title {

@@ -63,11 +63,16 @@
 
           <!-- 报名按钮 -->
           <div v-if="event.status === 'REGISTERING'" class="action-bar">
-            <button
-              class="ui-button ui-button-primary"
-              :disabled="registering"
-              @click="showRegisterModal = true"
-            >{{ registering ? '报名中...' : '立即报名' }}</button>
+            <template v-if="event.hasRegistered">
+              <span class="registered-tag">&#10003; 已报名</span>
+            </template>
+            <template v-else>
+              <button
+                class="ui-button ui-button-primary"
+                :disabled="registering"
+                @click="showRegisterModal = true"
+              >{{ registering ? '报名中...' : '立即报名' }}</button>
+            </template>
             <span v-if="event.bracketSize" class="action-hint">
               还剩 {{ event.bracketSize - (event.registrationCount || 0) }} 个名额
             </span>
@@ -565,6 +570,19 @@ window.addEventListener('sse:eventStatusChanged', onSseEvent)
 .action-hint {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+.registered-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1.5px solid #b7eb8f;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: 600;
 }
 
 .status-hint {
