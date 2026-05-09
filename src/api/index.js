@@ -305,10 +305,10 @@ export const event = {
       body: JSON.stringify(data)
     })
   },
-  addTeam(eventId, data) {
+  addTeam(eventId, teamName) {
     return request(`/event/${eventId}/bracket/team`, {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify({ teamName })
     })
   },
   deleteTeam(eventId, regId) {

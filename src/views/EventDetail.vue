@@ -201,11 +201,7 @@
             <div class="form-item">
               <label class="form-label">队伍名称 <span class="required">*</span></label>
               <input v-model="addTeamForm.teamName" type="text" class="form-input" placeholder="输入队伍名称" />
-            </div>
-            <div class="form-item">
-              <label class="form-label">Bracket 位置 <span class="required">*</span></label>
-              <input v-model.number="addTeamForm.bracketPosition" type="number" class="form-input" min="0" :max="event.bracketSize - 1" placeholder="位置编号（0-based）" />
-              <p class="form-hint">位置编号从0开始，必须为空位</p>
+              <p class="form-hint">系统将自动分配对阵位置</p>
             </div>
           </div>
           <div v-if="addTeamError" class="form-error">{{ addTeamError }}</div>
@@ -248,7 +244,7 @@ const resultError = ref('')
 
 // 添加队伍
 const showAddTeamModal = ref(false)
-const addTeamForm = ref({ teamName: '', bracketPosition: 0 })
+const addTeamForm = ref({ teamName: '' })
 const addTeamError = ref('')
 
 const isOrganizer = computed(() => {
@@ -388,12 +384,9 @@ async function handleAddTeam() {
   actionLoading.value = true
   addTeamError.value = ''
   try {
-    await eventApi.addTeam(route.params.id, {
-      teamName: addTeamForm.value.teamName.trim(),
-      bracketPosition: addTeamForm.value.bracketPosition
-    })
+    await eventApi.addTeam(route.params.id, addTeamForm.value.teamName.trim())
     showAddTeamModal.value = false
-    addTeamForm.value = { teamName: '', bracketPosition: 0 }
+    addTeamForm.value = { teamName: '' }
     await Promise.all([loadEvent(), loadBracket()])
   } catch (e) {
     addTeamError.value = e.message
