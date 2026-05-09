@@ -24,8 +24,17 @@
 
       <section v-if="loading && events.length === 0" class="ui-card ui-loading">加载中...</section>
 
-      <section v-else-if="events.length === 0" class="ui-card ui-empty">
-        暂无赛事
+      <section v-else-if="events.length === 0" class="empty-card ui-card">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 12h8"/>
+            <path d="M12 8v8"/>
+          </svg>
+        </div>
+        <p class="empty-title">暂无赛事</p>
+        <p class="empty-desc">还没有发布的赛事，期待精彩对决！</p>
+        <router-link to="/create-event" class="ui-button ui-button-primary">发布赛事</router-link>
       </section>
 
       <section v-else class="events-list">
@@ -342,6 +351,40 @@ onMounted(() => {
   font-size: 20px;
   color: var(--color-text-muted);
   line-height: 1;
+}
+
+/* 空状态 */
+.empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2xl) var(--space-xl);
+  border-radius: var(--radius-xl);
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-soft);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+.empty-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.empty-desc {
+  margin: 0 0 var(--space-lg);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
 .load-more {

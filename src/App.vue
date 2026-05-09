@@ -65,9 +65,21 @@ function handleEventStatusChanged(data) {
   toastBus.warning(data.message || `赛事「${data.eventTitle}」状态已变更`)
 }
 
+function handleMatchResult(data) {
+  console.log('SSE matchResult:', data)
+  window.dispatchEvent(new CustomEvent('sse:matchResult', { detail: data }))
+  toastBus.info(`第${data.round}轮: ${data.winnerName} 战胜 ${data.loserName}`)
+}
+
+function handleChampionCrowned(data) {
+  console.log('SSE championCrowned:', data)
+  window.dispatchEvent(new CustomEvent('sse:championCrowned', { detail: data }))
+  toastBus.success(`${data.championName} 获得冠军！`)
+}
+
 watch(user, (newUser) => {
   if (newUser) {
-    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleBroadcast)
+    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleBroadcast, handleMatchResult, handleChampionCrowned)
   } else {
     disconnectSSE()
   }
@@ -82,7 +94,7 @@ onUnmounted(() => {
 
 provide('connectSSE', () => {
   if (user.value) {
-    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleBroadcast)
+    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleBroadcast, handleMatchResult, handleChampionCrowned)
   }
 })
 

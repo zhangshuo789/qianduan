@@ -316,6 +316,50 @@ export const event = {
   },
   deleteTeam(eventId, regId) {
     return request(`/event/${eventId}/bracket/team/${regId}`, { method: 'DELETE' })
+  },
+  subscribe(id) {
+    return request(`/event/${id}/subscribe`, { method: 'POST' })
+  },
+  unsubscribe(id) {
+    return request(`/event/${id}/subscribe`, { method: 'DELETE' })
+  }
+}
+
+export const feedback = {
+  create(data) {
+    return request('/feedback', { method: 'POST', body: JSON.stringify(data) })
+  },
+  getMine(page = 0, size = 10) {
+    return request(`/feedback/mine?page=${page}&size=${size}`)
+  },
+  getAll(params = {}) {
+    let url = `/feedback?page=${params.page || 0}&size=${params.size || 10}`
+    if (params.status) url += `&status=${params.status}`
+    return request(url)
+  },
+  reply(id, reply) {
+    return request(`/feedback/${id}/reply`, { method: 'POST', body: JSON.stringify({ reply }) })
+  },
+  close(id) {
+    return request(`/feedback/${id}/close`, { method: 'PUT' })
+  }
+}
+
+export const announcement = {
+  list(page = 0, size = 10) {
+    return request(`/announcement?page=${page}&size=${size}`)
+  },
+  getDetail(id) {
+    return request(`/announcement/${id}`)
+  },
+  create(data) {
+    return request('/announcement', { method: 'POST', body: JSON.stringify(data) })
+  },
+  update(id, data) {
+    return request(`/announcement/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  },
+  delete(id) {
+    return request(`/announcement/${id}`, { method: 'DELETE' })
   }
 }
 
@@ -537,13 +581,15 @@ const SSE_RECONNECT_DELAY = 1000      // 初始重连延迟 1 秒
 const SSE_MAX_DELAY = 30000            // 最大重连延迟 30 秒
 const SSE_MAX_ATTEMPTS = 10            // 最大重连次数
 
-export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onBroadcast) {
+export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onBroadcast, onMatchResult, onChampionCrowned) {
   // 保存回调函数引用，用于重连
   sseCallbacks = {
     onMessage,
     onGroupMessage,
     onEventUpdate,
     onEventStatusChanged,
+    onMatchResult,
+    onChampionCrowned,
     onBroadcast
   }
 
@@ -592,7 +638,7 @@ export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStat
 function bindSSEListeners() {
   if (!eventSource || !sseCallbacks) return
 
-  const { onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onBroadcast } = sseCallbacks
+  const { onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onBroadcast, onMatchResult, onChampionCrowned } = sseCallbacks
 
   eventSource.addEventListener('newMessage', (e) => {
     try {
@@ -636,6 +682,22 @@ function bindSSEListeners() {
       console.error('SSE broadcast parse error:', err)
     }
   })
+
+  eventSource.addEventListener('matchResult', (e) => {
+    try {
+      if (onMatchResult) onMatchResult(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE matchResult parse error:', err)
+    }
+  })
+
+  eventSource.addEventListener('championCrowned', (e) => {
+    try {
+      if (onChampionCrowned) onChampionCrowned(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE championCrowned parse error:', err)
+    }
+  })
 }
 
 function scheduleReconnect() {
@@ -662,7 +724,9 @@ function scheduleReconnect() {
         sseCallbacks.onGroupMessage,
         sseCallbacks.onEventUpdate,
         sseCallbacks.onEventStatusChanged,
-        sseCallbacks.onBroadcast
+        sseCallbacks.onBroadcast,
+        sseCallbacks.onMatchResult,
+        sseCallbacks.onChampionCrowned
       )
     }
   }, delay)

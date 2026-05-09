@@ -41,6 +41,10 @@
               <span class="info-label">队伍数</span>
               <span class="info-value">{{ event.registrationCount || 0 }}/{{ event.bracketSize }}</span>
             </div>
+            <div class="info-item">
+              <span class="info-label">关注人数</span>
+              <span class="info-value">{{ event.subscriberCount || 0 }}</span>
+            </div>
             <div v-if="event.organizer" class="info-item">
               <span class="info-label">主办方</span>
               <span class="info-value">{{ event.organizer }}</span>
@@ -63,31 +67,57 @@
 
           <!-- 报名按钮 -->
           <div v-if="event.status === 'REGISTERING'" class="action-bar">
-            <template v-if="event.hasRegistered">
-              <span class="registered-tag">&#10003; 已报名</span>
-            </template>
-            <template v-else>
-              <button
-                class="ui-button ui-button-primary"
-                :disabled="registering"
-                @click="showRegisterModal = true"
-              >{{ registering ? '报名中...' : '立即报名' }}</button>
-            </template>
-            <span v-if="event.bracketSize" class="action-hint">
-              还剩 {{ event.bracketSize - (event.registrationCount || 0) }} 个名额
-            </span>
+            <div class="action-left">
+              <template v-if="event.hasRegistered">
+                <span class="registered-tag">&#10003; 已报名</span>
+              </template>
+              <template v-else>
+                <button
+                  class="ui-button ui-button-primary"
+                  :disabled="registering"
+                  @click="showRegisterModal = true"
+                >{{ registering ? '报名中...' : '立即报名' }}</button>
+              </template>
+              <span v-if="event.bracketSize" class="action-hint">
+                还剩 {{ event.bracketSize - (event.registrationCount || 0) }} 个名额
+              </span>
+            </div>
+            <button
+              class="subscribe-btn"
+              :class="{ subscribed: event.isSubscribed }"
+              @click="toggleSubscribe"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path v-if="event.isSubscribed" d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0" fill="currentColor"/>
+                <path v-else d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/>
+              </svg>
+              {{ event.isSubscribed ? '已订阅' : '订阅' }}
+            </button>
           </div>
           <div v-else-if="event.status === 'IN_PROGRESS'" class="action-bar">
             <span class="status-hint">比赛进行中，查看对阵图 &darr;</span>
+            <button
+              class="subscribe-btn"
+              :class="{ subscribed: event.isSubscribed }"
+              @click="toggleSubscribe"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path v-if="event.isSubscribed" d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0" fill="currentColor"/>
+                <path v-else d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/>
+              </svg>
+              {{ event.isSubscribed ? '已订阅' : '订阅' }}
+            </button>
           </div>
           <div v-else-if="event.status === 'ENDED' && champion" class="action-bar champion-bar">
-            <span class="champion-icon">&#127942;</span>
-            <span class="champion-text">冠军：{{ champion.teamName }}</span>
+            <div class="action-left">
+              <span class="champion-icon">&#127942;</span>
+              <span class="champion-text">冠军：{{ champion.teamName }}</span>
+            </div>
           </div>
         </section>
 
         <!-- 组织者操作面板 -->
-        <section v-if="isOrganizer" class="control-panel ui-card">
+        <section v-if="isOrganizer && event.status !== 'IN_PROGRESS'" class="control-panel ui-card">
           <h3 class="panel-title">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"/>
@@ -360,6 +390,23 @@ async function handleRegister() {
   }
 }
 
+async function toggleSubscribe() {
+  if (!getUser()) { alert('请先登录'); return }
+  try {
+    if (event.value.isSubscribed) {
+      await eventApi.unsubscribe(route.params.id)
+      event.value.isSubscribed = false
+      event.value.subscriberCount = Math.max(0, (event.value.subscriberCount || 1) - 1)
+    } else {
+      await eventApi.subscribe(route.params.id)
+      event.value.isSubscribed = true
+      event.value.subscriberCount = (event.value.subscriberCount || 0) + 1
+    }
+  } catch (e) {
+    alert(e.message)
+  }
+}
+
 async function handleStartBracket() {
   actionLoading.value = true
   try {
@@ -446,6 +493,8 @@ function onSseEvent() {
 }
 window.addEventListener('sse:eventUpdate', onSseEvent)
 window.addEventListener('sse:eventStatusChanged', onSseEvent)
+window.addEventListener('sse:matchResult', onSseEvent)
+window.addEventListener('sse:championCrowned', onSseEvent)
 </script>
 
 <style scoped>
@@ -585,9 +634,43 @@ window.addEventListener('sse:eventStatusChanged', onSseEvent)
 .action-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   padding-top: var(--space-5);
   border-top: 1px solid var(--color-border-light);
+}
+
+.action-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.subscribe-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-md);
+  border: 1.5px solid var(--color-border);
+  background: white;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.subscribe-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.subscribe-btn.subscribed {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .action-hint {

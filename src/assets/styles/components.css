@@ -150,6 +150,32 @@
   border: 1px solid var(--color-border-light);
 }
 
+.ui-card {
+  background: var(--color-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-light);
+}
+
+.ui-page {
+  min-height: calc(100vh - 72px);
+  padding: var(--space-6);
+}
+
+.ui-loading {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.ui-empty {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
 .form-group {
   margin-bottom: var(--space-md);
 }

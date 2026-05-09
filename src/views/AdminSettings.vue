@@ -5,8 +5,8 @@
     </div>
 
     <div class="settings-section ui-card">
-      <h2>板块管理</h2>
-      <div class="settings-actions">
+      <div class="section-header">
+        <h2>板块管理</h2>
         <button class="btn btn-primary" @click="showBoardModal = true">添加板块</button>
       </div>
       <div v-if="loadingBoards" class="loading-state">
@@ -39,8 +39,8 @@
     </div>
 
     <div class="settings-section ui-card">
-      <h2>敏感词管理</h2>
-      <div class="settings-actions">
+      <div class="section-header">
+        <h2>敏感词管理</h2>
         <button class="btn btn-primary" @click="showWordModal = true">添加敏感词</button>
       </div>
       <div v-if="loadingWords" class="loading-state">
@@ -332,6 +332,7 @@ onMounted(() => {
 }
 
 .settings-section {
+  padding: var(--space-xl);
   margin-bottom: var(--space-xl);
 }
 
@@ -339,8 +340,15 @@ onMounted(() => {
   font-size: var(--text-lg);
   font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 var(--space-sm);
-  padding-bottom: var(--space-md);
+  margin: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-lg);
+  margin-bottom: var(--space-lg);
   border-bottom: 1px solid var(--color-border-light);
 }
 
@@ -348,10 +356,6 @@ onMounted(() => {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   margin: 0 0 var(--space-lg);
-}
-
-.settings-actions {
-  margin-bottom: var(--space-lg);
 }
 
 .loading-state {

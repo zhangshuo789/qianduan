@@ -104,14 +104,14 @@
             功能入口
           </div>
           <div class="feature-grid">
-            <router-link to="/announcement" class="feature-item">
+            <div class="feature-item" @click="showAnnouncement = true">
               <div class="feature-icon feature-icon-1">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/>
                 </svg>
               </div>
               <span>公告</span>
-            </router-link>
+            </div>
             <router-link to="/feedback" class="feature-item">
               <div class="feature-icon feature-icon-2">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
@@ -145,12 +145,17 @@
 
       </div>
     </div>
+
+    <AnnouncementModal v-if="showAnnouncement" @close="showAnnouncement = false" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { board, user as userApi, useUser, getAvatarUrl, DEFAULT_AVATAR } from '@/api'
+import AnnouncementModal from '@/components/AnnouncementModal.vue'
+
+const showAnnouncement = ref(false)
 
 const boards = ref([])
 const loading = ref(true)
@@ -530,6 +535,7 @@ onMounted(async () => {
   background: var(--color-bg-soft);
   border-radius: var(--radius-lg);
   text-decoration: none;
+  cursor: pointer;
   transition: all var(--transition-fast);
 }
 

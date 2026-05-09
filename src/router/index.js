@@ -17,6 +17,11 @@ import AdminUsers from '@/views/AdminUsers.vue'
 import AdminReports from '@/views/AdminReports.vue'
 import AdminGroups from '@/views/AdminGroups.vue'
 import AdminSettings from '@/views/AdminSettings.vue'
+import AdminAnnouncements from '@/views/AdminAnnouncements.vue'
+import AdminFeedback from '@/views/AdminFeedback.vue'
+import Feedback from '@/views/Feedback.vue'
+import About from '@/views/About.vue'
+import Help from '@/views/Help.vue'
 import Events from '@/views/Events.vue'
 import EventDetail from '@/views/EventDetail.vue'
 import CreateEvent from '@/views/CreateEvent.vue'
@@ -41,6 +46,9 @@ const routes = [
   { path: '/events', name: 'Events', component: Events },
   { path: '/event/:id', name: 'EventDetail', component: EventDetail },
   { path: '/create-event', name: 'CreateEvent', component: CreateEvent },
+  { path: '/feedback', name: 'Feedback', component: Feedback },
+  { path: '/about', name: 'About', component: About },
+  { path: '/help', name: 'Help', component: Help },
   { path: '/notifications', name: 'NotificationDetail', component: NotificationDetail },
   { path: '/knowledge-graph', name: 'KnowledgeGraph', component: KnowledgeGraph },
   { path: '/ai-chat', name: 'AIChat', component: AIChat },
@@ -53,7 +61,9 @@ const routes = [
       { path: 'users', name: 'AdminUsers', component: AdminUsers },
       { path: 'reports', name: 'AdminReports', component: AdminReports },
       { path: 'groups', name: 'AdminGroups', component: AdminGroups },
-      { path: 'settings', name: 'AdminSettings', component: AdminSettings }
+      { path: 'settings', name: 'AdminSettings', component: AdminSettings },
+      { path: 'announcements', name: 'AdminAnnouncements', component: AdminAnnouncements },
+      { path: 'feedback', name: 'AdminFeedback', component: AdminFeedback }
     ]
   }
 ]
