@@ -299,6 +299,9 @@ export const event = {
   startBracket(id) {
     return request(`/event/${id}/bracket/start`, { method: 'POST' })
   },
+  rebuildBracket(id) {
+    return request(`/event/${id}/bracket/rebuild`, { method: 'POST' })
+  },
   setMatchResult(eventId, matchId, data) {
     return request(`/event/${eventId}/match/${matchId}/result`, {
       method: 'PUT',

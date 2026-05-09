@@ -102,6 +102,12 @@
               class="ui-button ui-button-ghost"
               @click="showAddTeamModal = true"
             >添加队伍</button>
+            <button
+              v-if="event.status === 'REGISTERING' || event.status === 'IN_PROGRESS'"
+              class="ui-button ui-button-ghost"
+              :disabled="actionLoading"
+              @click="handleRebuildBracket"
+            >{{ actionLoading ? '重建中...' : '重新排列' }}</button>
           </div>
         </section>
 
@@ -337,6 +343,19 @@ async function handleStartBracket() {
   actionLoading.value = true
   try {
     await eventApi.startBracket(route.params.id)
+    await Promise.all([loadEvent(), loadBracket()])
+  } catch (e) {
+    alert(e.message)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+async function handleRebuildBracket() {
+  if (!confirm('重新排列将重置所有对阵，确认继续？')) return
+  actionLoading.value = true
+  try {
+    await eventApi.rebuildBracket(route.params.id)
     await Promise.all([loadEvent(), loadBracket()])
   } catch (e) {
     alert(e.message)
