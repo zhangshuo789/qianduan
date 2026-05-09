@@ -277,6 +277,45 @@ export const group = {
   }
 }
 
+export const event = {
+  list(page = 0, size = 10) {
+    return request(`/event?page=${page}&size=${size}`)
+  },
+  getDetail(id) {
+    return request(`/event/${id}`)
+  },
+  create(data) {
+    return request('/event', { method: 'POST', body: JSON.stringify(data) })
+  },
+  register(id, teamName) {
+    return request(`/event/${id}/register`, {
+      method: 'POST',
+      body: JSON.stringify({ teamName })
+    })
+  },
+  getBracket(id) {
+    return request(`/event/${id}/bracket`)
+  },
+  startBracket(id) {
+    return request(`/event/${id}/bracket/start`, { method: 'POST' })
+  },
+  setMatchResult(eventId, matchId, data) {
+    return request(`/event/${eventId}/match/${matchId}/result`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  },
+  addTeam(eventId, data) {
+    return request(`/event/${eventId}/bracket/team`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+  deleteTeam(eventId, regId) {
+    return request(`/event/${eventId}/bracket/team/${regId}`, { method: 'DELETE' })
+  }
+}
+
 export const admin = {
   // 用户管理
   getUsers(params = {}) {
@@ -495,11 +534,13 @@ const SSE_RECONNECT_DELAY = 1000      // 初始重连延迟 1 秒
 const SSE_MAX_DELAY = 30000            // 最大重连延迟 30 秒
 const SSE_MAX_ATTEMPTS = 10            // 最大重连次数
 
-export function connectSSE(onMessage, onGroupMessage, onBroadcast) {
+export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onBroadcast) {
   // 保存回调函数引用，用于重连
   sseCallbacks = {
     onMessage,
     onGroupMessage,
+    onEventUpdate,
+    onEventStatusChanged,
     onBroadcast
   }
 
@@ -548,7 +589,7 @@ export function connectSSE(onMessage, onGroupMessage, onBroadcast) {
 function bindSSEListeners() {
   if (!eventSource || !sseCallbacks) return
 
-  const { onMessage, onGroupMessage, onBroadcast } = sseCallbacks
+  const { onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onBroadcast } = sseCallbacks
 
   eventSource.addEventListener('newMessage', (e) => {
     try {
@@ -563,6 +604,22 @@ function bindSSEListeners() {
       onGroupMessage(JSON.parse(e.data))
     } catch (err) {
       console.error('SSE newGroupMessage parse error:', err)
+    }
+  })
+
+  eventSource.addEventListener('eventUpdate', (e) => {
+    try {
+      if (onEventUpdate) onEventUpdate(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE eventUpdate parse error:', err)
+    }
+  })
+
+  eventSource.addEventListener('eventStatusChanged', (e) => {
+    try {
+      if (onEventStatusChanged) onEventStatusChanged(JSON.parse(e.data))
+    } catch (err) {
+      console.error('SSE eventStatusChanged parse error:', err)
     }
   })
 
@@ -600,6 +657,8 @@ function scheduleReconnect() {
       connectSSE(
         sseCallbacks.onMessage,
         sseCallbacks.onGroupMessage,
+        sseCallbacks.onEventUpdate,
+        sseCallbacks.onEventStatusChanged,
         sseCallbacks.onBroadcast
       )
     }

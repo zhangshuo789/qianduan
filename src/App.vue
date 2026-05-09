@@ -53,9 +53,21 @@ function handleBroadcast(data) {
   toastBus.info(data.content || data.title || '收到一条新通知')
 }
 
+function handleEventUpdate(data) {
+  console.log('SSE eventUpdate:', data)
+  window.dispatchEvent(new CustomEvent('sse:eventUpdate', { detail: data }))
+  toastBus.info(data.message || `赛事「${data.eventTitle}」已更新`)
+}
+
+function handleEventStatusChanged(data) {
+  console.log('SSE eventStatusChanged:', data)
+  window.dispatchEvent(new CustomEvent('sse:eventStatusChanged', { detail: data }))
+  toastBus.warning(data.message || `赛事「${data.eventTitle}」状态已变更`)
+}
+
 watch(user, (newUser) => {
   if (newUser) {
-    connectSSE(handleNewMessage, handleNewGroupMessage, handleBroadcast)
+    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleBroadcast)
   } else {
     disconnectSSE()
   }
@@ -70,7 +82,7 @@ onUnmounted(() => {
 
 provide('connectSSE', () => {
   if (user.value) {
-    connectSSE(handleNewMessage, handleNewGroupMessage, handleBroadcast)
+    connectSSE(handleNewMessage, handleNewGroupMessage, handleEventUpdate, handleEventStatusChanged, handleBroadcast)
   }
 })
 

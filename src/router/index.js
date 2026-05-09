@@ -17,6 +17,9 @@ import AdminUsers from '@/views/AdminUsers.vue'
 import AdminReports from '@/views/AdminReports.vue'
 import AdminGroups from '@/views/AdminGroups.vue'
 import AdminSettings from '@/views/AdminSettings.vue'
+import Events from '@/views/Events.vue'
+import EventDetail from '@/views/EventDetail.vue'
+import CreateEvent from '@/views/CreateEvent.vue'
 import AIChat from '@/views/AIChat.vue'
 import NotificationDetail from '@/views/NotificationDetail.vue'
 const KnowledgeGraph = () => import('@/views/KnowledgeGraph.vue')
@@ -35,6 +38,9 @@ const routes = [
   { path: '/chat/:userId', name: 'Chat', component: Chat },
   { path: '/groups', name: 'Groups', component: Groups },
   { path: '/group/:id', name: 'GroupChat', component: GroupChat },
+  { path: '/events', name: 'Events', component: Events },
+  { path: '/event/:id', name: 'EventDetail', component: EventDetail },
+  { path: '/create-event', name: 'CreateEvent', component: CreateEvent },
   { path: '/notifications', name: 'NotificationDetail', component: NotificationDetail },
   { path: '/knowledge-graph', name: 'KnowledgeGraph', component: KnowledgeGraph },
   { path: '/ai-chat', name: 'AIChat', component: AIChat },
