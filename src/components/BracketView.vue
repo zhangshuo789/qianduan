@@ -1,66 +1,51 @@
 <template>
-  <div class="bracket-wrapper" ref="wrapperRef">
+  <div class="bracket-wrapper">
     <div class="bracket-scroll">
-      <div class="bracket" :style="bracketStyle">
-        <!-- 轮次标签 -->
-        <div class="round-labels">
-          <div
-            v-for="(round, ri) in rounds"
-            :key="ri"
-            class="round-label"
-            :style="roundLabelStyle(ri)"
-          >{{ roundLabel(round, ri) }}</div>
-        </div>
-
-        <!-- 对阵图主体 -->
-        <div class="bracket-body">
-          <div
-            v-for="(round, ri) in rounds"
-            :key="ri"
-            class="round-column"
-            :style="roundColumnStyle(ri)"
-          >
-            <div
-              v-for="(match, mi) in round.matches"
-              :key="match.matchId"
-              class="match-wrapper"
-              :style="matchWrapperStyle(ri)"
-            >
-              <div
-                class="match-card"
-                :class="matchCardClass(match)"
-                @click="$emit('match-click', match)"
-              >
-                <!-- team1 -->
-                <div class="match-team" :class="teamClass(match, match.team1, match.winnerId)">
-                  <span class="team-name">{{ match.team1?.teamName || '待定' }}</span>
-                  <span v-if="match.score1 != null" class="team-score">{{ match.score1 }}</span>
-                </div>
-                <!-- 分隔线 -->
-                <div class="match-divider"></div>
-                <!-- team2 -->
-                <div class="match-team" :class="teamClass(match, match.team2, match.winnerId)">
-                  <span class="team-name">{{ match.team2?.teamName || '待定' }}</span>
-                  <span v-if="match.score2 != null" class="team-score">{{ match.score2 }}</span>
-                </div>
-                <!-- 状态标签 -->
-                <span v-if="match.status === 'BYE'" class="match-status-tag tag-bye">轮空</span>
-                <span v-else-if="match.status === 'PENDING' && canSetResult(match)" class="match-status-tag tag-ready">可操作</span>
-              </div>
-              <!-- 连接线（非最后一轮） -->
-              <div v-if="ri < rounds.length - 1" class="connector-out"></div>
-            </div>
-            <!-- 连接线入（非第一轮） -->
-            <div v-if="ri > 0" class="connector-column">
-              <div
-                v-for="(match, mi) in round.matches"
-                :key="mi"
-                class="connector-in"
-                :style="connectorInStyle(ri)"
-              ></div>
-            </div>
+      <div class="bracket-grid" :style="gridStyle">
+        <template v-for="(round, ri) in rounds" :key="ri">
+          <!-- 轮次标题 -->
+          <div class="round-title" :style="gridPos(ri, 0, 'title')">
+            {{ roundLabel(ri) }}
           </div>
-        </div>
+
+          <!-- 比赛卡片 -->
+          <div
+            v-for="(match, mi) in round.matches"
+            :key="match.matchId"
+            class="match-slot"
+            :style="gridPos(ri, mi, 'match')"
+          >
+            <!-- 左侧入线（非首轮） -->
+            <div v-if="ri > 0" class="line-in"></div>
+
+            <div
+              class="match-card"
+              :class="matchCardClass(match)"
+              @click="$emit('match-click', match)"
+            >
+              <div class="match-team" :class="teamClass(match, match.team1, match.winnerId)">
+                <span class="team-seed">{{ positionOf(match.team1) }}</span>
+                <span class="team-name">{{ match.team1?.teamName || '待定' }}</span>
+                <span v-if="match.score1 != null" class="team-score">{{ match.score1 }}</span>
+              </div>
+              <div class="match-vs"></div>
+              <div class="match-team" :class="teamClass(match, match.team2, match.winnerId)">
+                <span class="team-seed">{{ positionOf(match.team2) }}</span>
+                <span class="team-name">{{ match.team2?.teamName || '待定' }}</span>
+                <span v-if="match.score2 != null" class="team-score">{{ match.score2 }}</span>
+              </div>
+              <span v-if="match.status === 'BYE'" class="match-tag tag-bye">轮空</span>
+              <span v-else-if="match.status === 'PENDING' && canSetResult(match)" class="match-tag tag-ready">可操作</span>
+            </div>
+
+            <!-- 右侧出线（非末轮） -->
+            <div v-if="ri < rounds.length - 1" class="line-out"></div>
+
+            <!-- 垂直连接线：出侧（非末轮） -->
+            <div v-if="ri < rounds.length - 1 && mi % 2 === 0" class="line-v line-v-top" :style="vLineStyle"></div>
+            <div v-if="ri < rounds.length - 1 && mi % 2 === 1" class="line-v line-v-bottom" :style="vLineStyle"></div>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -77,46 +62,66 @@ const props = defineProps({
 
 defineEmits(['match-click'])
 
-const baseHeight = 72
-const gap = 16
+const colWidth = 210
+const matchH = 68
+const rowGap = 12
+const baseRow = matchH + rowGap
+const titleH = 36
 
 const totalRounds = computed(() => props.rounds.length)
 
-const bracketStyle = computed(() => {
-  const cols = totalRounds.value
-  const w = cols * 220
-  return { minWidth: w + 'px' }
-})
-
-function roundLabelStyle(ri) {
-  return { left: ri * 220 + 'px', width: '200px' }
+// 每轮最大 match 数，用于计算总高度
+function matchesInRound(ri) {
+  return props.rounds[ri]?.matches?.length || 1
 }
 
-function roundColumnStyle(ri) {
-  const multiplier = Math.pow(2, ri)
-  const itemHeight = baseHeight + gap
-  const marginTop = ri === 0 ? 0 : (itemHeight * (multiplier - 1)) / 2
+// match 高度（含间距）
+function slotH(ri) {
+  return baseRow * Math.pow(2, ri)
+}
+
+const gridStyle = computed(() => {
+  const cols = totalRounds.value
   return {
-    marginLeft: '0',
-    paddingTop: marginTop + 'px'
+    display: 'grid',
+    gridTemplateColumns: `repeat(${cols}, ${colWidth}px)`,
+    gridAutoRows: 'auto',
+    width: cols * colWidth + 'px',
+    position: 'relative'
+  }
+})
+
+// 计算每个元素的 grid 行位置
+function gridPos(ri, mi, type) {
+  const multiplier = Math.pow(2, ri)
+  // 每个 match 占据的行跨度
+  const span = multiplier
+  // 起始行（1-based）
+  const startRow = mi * span + 1
+  // 标题行占第 0 行（需要偏移）
+  if (type === 'title') {
+    return {
+      gridColumn: ri + 1,
+      gridRow: `1`
+    }
+  }
+  // match 从第 2 行开始（第 1 行是标题）
+  return {
+    gridColumn: ri + 1,
+    gridRow: `${startRow + 1} / span ${span}`
   }
 }
 
-function matchWrapperStyle(ri) {
-  const multiplier = Math.pow(2, ri)
-  const itemHeight = baseHeight + gap
-  const marginBottom = ri === 0 ? gap : (itemHeight * (multiplier - 1)) + gap
-  return { marginBottom: marginBottom + 'px' }
+const vLineStyle = computed(() => {
+  return { height: baseRow + 'px' }
+})
+
+function positionOf(team) {
+  if (!team) return ''
+  return team.bracketPosition != null ? `#${team.bracketPosition + 1}` : ''
 }
 
-function connectorInStyle(ri) {
-  const multiplier = Math.pow(2, ri - 1)
-  const itemHeight = baseHeight + gap
-  const marginBottom = ri === 1 ? gap : (itemHeight * (multiplier - 1)) + gap
-  return { marginBottom: marginBottom + 'px' }
-}
-
-function roundLabel(round, ri) {
+function roundLabel(ri) {
   const total = totalRounds.value
   if (ri === total - 1) return '决赛'
   if (ri === total - 2) return '半决赛'
@@ -156,7 +161,7 @@ function canSetResult(match) {
 .bracket-wrapper {
   width: 100%;
   overflow-x: auto;
-  padding: var(--space-4) 0;
+  padding: var(--space-2) 0 var(--space-4);
 }
 
 .bracket-scroll {
@@ -164,114 +169,134 @@ function canSetResult(match) {
   min-width: 100%;
 }
 
-.bracket {
-  position: relative;
-  padding-top: 48px;
+.bracket-grid {
+  gap: 0;
 }
 
-.round-labels {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 40px;
-}
-
-.round-label {
-  position: absolute;
-  text-align: center;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  padding: var(--space-2) 0;
-}
-
-.bracket-body {
-  display: flex;
-}
-
-.round-column {
-  position: relative;
-  width: 200px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.match-wrapper {
-  position: relative;
+/* 轮次标题 */
+.round-title {
   display: flex;
   align-items: center;
+  justify-content: center;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--color-border-light);
+  margin-bottom: var(--space-3);
 }
 
+/* 比赛卡槽 */
+.match-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* 比赛卡片 */
 .match-card {
-  width: 180px;
+  width: 176px;
   background: var(--color-card);
   border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   cursor: pointer;
   transition: all var(--transition-fast);
+  position: relative;
+  z-index: 2;
   flex-shrink: 0;
 }
 
 .match-card:hover {
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: scale(1.02);
 }
 
 .match-ready {
   border-color: var(--color-primary);
-  background: var(--color-primary-soft);
+  box-shadow: 0 0 0 1px var(--color-primary-soft);
 }
 
 .match-completed {
-  opacity: 0.9;
+  border-color: #d9f7be;
 }
 
 .match-bye {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
 
+.match-bye:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 队伍行 */
 .match-team {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  font-size: var(--text-sm);
-  transition: all var(--transition-fast);
+  gap: var(--space-2);
+  padding: 8px 10px;
+  font-size: 13px;
+  transition: background var(--transition-fast);
 }
 
-.team-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-
-.team-score {
-  font-weight: 700;
-  margin-left: var(--space-2);
-  flex-shrink: 0;
-}
-
-.match-divider {
+.match-vs {
   height: 1px;
   background: var(--color-border-light);
 }
 
+.team-seed {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-bg-soft);
+  border-radius: 3px;
+  padding: 1px 0;
+}
+
+.team-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.team-score {
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 队伍状态 */
 .team-empty {
   color: var(--color-text-muted);
+}
+
+.team-empty .team-name {
   font-style: italic;
+  font-weight: 400;
 }
 
 .team-winner {
   background: #f6ffed;
+}
+
+.team-winner .team-name {
   color: #389e0d;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .team-winner .team-score {
@@ -279,73 +304,103 @@ function canSetResult(match) {
 }
 
 .team-loser {
-  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+.team-loser .team-name {
   text-decoration: line-through;
-  opacity: 0.6;
+  color: var(--color-text-muted);
 }
 
 .team-champion {
-  background: #fff7e6;
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
+}
+
+.team-champion .team-name {
   color: #d48806;
   font-weight: 700;
 }
 
-.team-eliminated {
-  color: var(--color-text-muted);
-  text-decoration: line-through;
+.team-champion .team-score {
+  color: #d48806;
 }
 
-.match-status-tag {
+.team-eliminated .team-name {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+/* 状态标签 */
+.match-tag {
   position: absolute;
-  top: -8px;
-  right: 8px;
+  top: -9px;
+  right: 6px;
   padding: 1px 8px;
   border-radius: var(--radius-full);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
+  z-index: 3;
+  letter-spacing: 0.3px;
 }
 
 .tag-bye {
   background: var(--color-bg-soft);
   color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
 }
 
 .tag-ready {
   background: var(--color-primary);
   color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-.connector-out {
-  width: 20px;
+/* 连接线 */
+.line-in {
+  position: absolute;
+  left: -16px;
+  top: 50%;
+  width: 16px;
   height: 2px;
   background: var(--color-border);
-  flex-shrink: 0;
+  transform: translateY(-1px);
 }
 
-.connector-column {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
+.line-out {
   position: absolute;
-  left: -20px;
-  top: 0;
-  bottom: 0;
-  width: 20px;
+  right: -16px;
+  top: 50%;
+  width: 16px;
+  height: 2px;
+  background: var(--color-border);
+  transform: translateY(-1px);
 }
 
-.connector-in {
-  height: 100%;
-  border-left: 2px solid var(--color-border);
-  margin-bottom: 0;
+.line-v {
+  position: absolute;
+  right: -17px;
+  width: 2px;
+  background: var(--color-border);
+  z-index: 1;
+}
+
+.line-v-top {
+  top: 50%;
+  transform: translateY(-1px);
+}
+
+.line-v-bottom {
+  bottom: 50%;
+  transform: translateY(1px);
 }
 
 @media (max-width: 768px) {
   .match-card {
-    width: 160px;
+    width: 150px;
   }
 
-  .round-column {
-    width: 180px;
+  .team-seed {
+    display: none;
   }
 }
 </style>

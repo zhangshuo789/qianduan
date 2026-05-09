@@ -1,6 +1,6 @@
 <template>
   <div class="event-detail-page ui-page">
-    <div class="event-detail-container">
+    <div class="event-detail-container" ref="pageRef">
       <!-- 返回 -->
       <header class="page-header ui-card ui-pop-in">
         <router-link to="/events" class="back-link">
@@ -229,12 +229,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { event as eventApi, getUser } from '@/api'
 import BracketView from '@/components/BracketView.vue'
 
 const route = useRoute()
+const pageRef = ref(null)
 const loading = ref(true)
 const event = ref(null)
 const bracket = ref(null)
@@ -301,6 +302,7 @@ function formatTime(time) {
   return `${y}年${m}月${day}日 ${h}:${min}`
 }
 
+// 首次加载：显示骨架屏
 async function loadEvent() {
   loading.value = true
   try {
@@ -310,6 +312,16 @@ async function loadEvent() {
     console.error('加载赛事详情失败:', e)
   } finally {
     loading.value = false
+  }
+}
+
+// 静默刷新：不触发 loading，不滚动页面
+async function refreshEvent() {
+  try {
+    const res = await eventApi.getDetail(route.params.id)
+    event.value = res.data
+  } catch (e) {
+    console.error('刷新赛事详情失败:', e)
   }
 }
 
@@ -325,6 +337,10 @@ async function loadBracket() {
   }
 }
 
+async function refreshAll() {
+  await Promise.all([refreshEvent(), loadBracket()])
+}
+
 async function handleRegister() {
   if (!teamName.value.trim()) {
     registerError.value = '请输入队伍名称'
@@ -336,7 +352,7 @@ async function handleRegister() {
     await eventApi.register(route.params.id, teamName.value.trim())
     showRegisterModal.value = false
     teamName.value = ''
-    await Promise.all([loadEvent(), loadBracket()])
+    await refreshAll()
   } catch (e) {
     registerError.value = e.message
   } finally {
@@ -348,7 +364,7 @@ async function handleStartBracket() {
   actionLoading.value = true
   try {
     await eventApi.startBracket(route.params.id)
-    await Promise.all([loadEvent(), loadBracket()])
+    await refreshAll()
   } catch (e) {
     alert(e.message)
   } finally {
@@ -361,7 +377,7 @@ async function handleRebuildBracket() {
   actionLoading.value = true
   try {
     await eventApi.rebuildBracket(route.params.id)
-    await Promise.all([loadEvent(), loadBracket()])
+    await refreshAll()
   } catch (e) {
     alert(e.message)
   } finally {
@@ -392,7 +408,7 @@ async function handleSetResult() {
       score2: resultForm.value.score2
     })
     showResultModal.value = false
-    await Promise.all([loadEvent(), loadBracket()])
+    await refreshAll()
   } catch (e) {
     resultError.value = e.message
   } finally {
@@ -411,7 +427,7 @@ async function handleAddTeam() {
     await eventApi.addTeam(route.params.id, addTeamForm.value.teamName.trim())
     showAddTeamModal.value = false
     addTeamForm.value = { teamName: '' }
-    await Promise.all([loadEvent(), loadBracket()])
+    await refreshAll()
   } catch (e) {
     addTeamError.value = e.message
   } finally {
@@ -426,8 +442,7 @@ onMounted(async () => {
 
 // 监听 SSE 事件，自动刷新对阵图
 function onSseEvent() {
-  loadBracket()
-  loadEvent()
+  refreshAll()
 }
 window.addEventListener('sse:eventUpdate', onSseEvent)
 window.addEventListener('sse:eventStatusChanged', onSseEvent)
@@ -475,25 +490,26 @@ window.addEventListener('sse:eventStatusChanged', onSseEvent)
 
 /* 赛事信息卡片 */
 .event-info {
-  padding: var(--space-5);
+  padding: var(--space-6);
   border-radius: var(--radius-xl);
 }
 
 .info-header {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .info-badges {
   display: flex;
   gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .badge {
-  padding: 2px 10px;
+  padding: 4px 14px;
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 .badge-format {
@@ -522,16 +538,20 @@ window.addEventListener('sse:eventStatusChanged', onSseEvent)
 }
 
 .event-title {
-  font-size: var(--text-xl);
+  font-size: 22px;
   font-weight: 700;
   margin: 0;
+  line-height: 1.3;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-3) var(--space-5);
-  margin-bottom: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg-soft);
+  border-radius: var(--radius-lg);
 }
 
 .info-full {
@@ -540,22 +560,25 @@ window.addEventListener('sse:eventStatusChanged', onSseEvent)
 
 .info-label {
   display: block;
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--color-text-muted);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
 }
 
 .info-value {
   font-size: var(--text-sm);
   color: var(--color-text);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .event-desc {
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
-  line-height: 1.6;
-  margin: 0 0 var(--space-4);
+  line-height: 1.7;
+  margin: 0 0 var(--space-5);
   white-space: pre-line;
 }
 
@@ -563,7 +586,7 @@ window.addEventListener('sse:eventStatusChanged', onSseEvent)
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding-top: var(--space-4);
+  padding-top: var(--space-5);
   border-top: 1px solid var(--color-border-light);
 }
 
@@ -607,9 +630,10 @@ window.addEventListener('sse:eventStatusChanged', onSseEvent)
 
 /* 组织者操作面板 */
 .control-panel {
-  padding: var(--space-5);
+  padding: var(--space-5) var(--space-6);
   border-radius: var(--radius-xl);
-  border-left: 3px solid var(--color-primary);
+  border-left: 4px solid var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary-soft) 0%, var(--color-card) 100%);
 }
 
 .panel-title {
@@ -630,7 +654,7 @@ window.addEventListener('sse:eventStatusChanged', onSseEvent)
 
 /* 对阵图区域 */
 .bracket-section {
-  padding: var(--space-5);
+  padding: var(--space-5) var(--space-6);
   border-radius: var(--radius-xl);
 }
 
@@ -638,7 +662,9 @@ window.addEventListener('sse:eventStatusChanged', onSseEvent)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .bracket-title {
