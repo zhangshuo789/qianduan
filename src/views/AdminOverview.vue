@@ -54,22 +54,7 @@
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon events">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </div>
-          <div class="stat-content">
-            <span class="stat-value">{{ stats.totalEvents || 0 }}</span>
-            <span class="stat-label">赛事活动</span>
-          </div>
-        </div>
-
-        <div class="stat-card">
+<div class="stat-card">
           <div class="stat-icon groups">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -146,14 +131,6 @@
               <span>内容审核</span>
               <span v-if="stats.pendingReports > 0" class="action-badge">{{ stats.pendingReports }}</span>
             </router-link>
-            <router-link to="/admin/events" class="quick-action-btn">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-              </svg>
-              <span>赛事管理</span>
-            </router-link>
             <router-link to="/admin/settings" class="quick-action-btn">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"/>
@@ -229,7 +206,6 @@ const stats = ref({
   totalUsers: 0,
   totalPosts: 0,
   totalComments: 0,
-  totalEvents: 0,
   totalGroups: 0,
   totalReports: 0,
   pendingReports: 0,
@@ -245,7 +221,6 @@ async function loadStats() {
         totalUsers: res.data.totalUsers || 0,
         totalPosts: res.data.totalPosts || 0,
         totalComments: res.data.totalComments || 0,
-        totalEvents: res.data.totalEvents || 0,
         totalGroups: res.data.totalGroups || 0,
         totalReports: res.data.totalReports || 0,
         pendingReports: res.data.pendingReports || 0,
@@ -352,11 +327,6 @@ onMounted(async () => {
 .stat-icon.comments {
   background: #f0f5ff;
   color: #597ef7;
-}
-
-.stat-icon.events {
-  background: #fff7e6;
-  color: #fa8c16;
 }
 
 .stat-icon.groups {

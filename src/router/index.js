@@ -11,15 +11,10 @@ import Messages from '@/views/Messages.vue'
 import Chat from '@/views/Chat.vue'
 import Groups from '@/views/Groups.vue'
 import GroupChat from '@/views/GroupChat.vue'
-import Events from '@/views/Events.vue'
-import EventDetail from '@/views/EventDetail.vue'
-import CreateEvent from '@/views/CreateEvent.vue'
-import MySubscriptions from '@/views/MySubscriptions.vue'
 import AdminDashboard from '@/views/AdminDashboard.vue'
 import AdminOverview from '@/views/AdminOverview.vue'
 import AdminUsers from '@/views/AdminUsers.vue'
 import AdminReports from '@/views/AdminReports.vue'
-import AdminEvents from '@/views/AdminEvents.vue'
 import AdminGroups from '@/views/AdminGroups.vue'
 import AdminSettings from '@/views/AdminSettings.vue'
 import AIChat from '@/views/AIChat.vue'
@@ -40,10 +35,6 @@ const routes = [
   { path: '/chat/:userId', name: 'Chat', component: Chat },
   { path: '/groups', name: 'Groups', component: Groups },
   { path: '/group/:id', name: 'GroupChat', component: GroupChat },
-  { path: '/events', name: 'Events', component: Events },
-  { path: '/event/:id', name: 'EventDetail', component: EventDetail },
-  { path: '/create-event', name: 'CreateEvent', component: CreateEvent },
-  { path: '/my-subscriptions', name: 'MySubscriptions', component: MySubscriptions },
   { path: '/notifications', name: 'NotificationDetail', component: NotificationDetail },
   { path: '/knowledge-graph', name: 'KnowledgeGraph', component: KnowledgeGraph },
   { path: '/ai-chat', name: 'AIChat', component: AIChat },
@@ -55,7 +46,6 @@ const routes = [
       { path: 'overview', name: 'AdminOverview', component: AdminOverview },
       { path: 'users', name: 'AdminUsers', component: AdminUsers },
       { path: 'reports', name: 'AdminReports', component: AdminReports },
-      { path: 'events', name: 'AdminEvents', component: AdminEvents },
       { path: 'groups', name: 'AdminGroups', component: AdminGroups },
       { path: 'settings', name: 'AdminSettings', component: AdminSettings }
     ]

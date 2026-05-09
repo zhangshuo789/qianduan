@@ -277,62 +277,6 @@ export const group = {
   }
 }
 
-export const event = {
-  list(page = 0, size = 10) {
-    return request(`/event?page=${page}&size=${size}`)
-  },
-  getDetail(id) {
-    return request(`/event/${id}`)
-  },
-  create(data) {
-    return request('/event', { method: 'POST', body: JSON.stringify(data) })
-  },
-  createWithImages(formData) {
-    const token = localStorage.getItem('token')
-    return fetch('/api/event', {
-      method: 'POST',
-      headers: {
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: formData
-    }).then(res => {
-      if (!res.ok) {
-        return res.json().then(err => { throw new Error(err.message || '请求失败') })
-      }
-      return res.json()
-    }).then(data => {
-      if (data.code !== 200) {
-        throw new Error(data.message || '请求失败')
-      }
-      return data
-    })
-  },
-  update(id, data) {
-    return request(`/event/${id}`, { method: 'PUT', body: JSON.stringify(data) })
-  },
-  delete(id) {
-    return request(`/event/${id}`, { method: 'DELETE' })
-  },
-  subscribe(id) {
-    return request(`/event/${id}/subscribe`, { method: 'POST' })
-  },
-  unsubscribe(id) {
-    return request(`/event/${id}/subscribe`, { method: 'DELETE' })
-  },
-  register(id, data) {
-    return request(`/event/${id}/register`, { method: 'POST', body: JSON.stringify(data) })
-  },
-  getRegistrations(id) {
-    return request(`/event/${id}/registration`)
-  },
-  reviewRegistration(eventId, regId, approved) {
-    return request(`/event/${eventId}/registration/${regId}?approved=${approved}`, { method: 'PUT' })
-  },
-  getSubscriptions(userId) {
-    return request(`/user/${userId}/subscriptions`)
-  }
-}
-
 export const admin = {
   // 用户管理
   getUsers(params = {}) {
@@ -362,17 +306,6 @@ export const admin = {
   },
   deleteComment(commentId) {
     return request(`/admin/comments/${commentId}`, { method: 'DELETE' })
-  },
-
-  // 赛事管理
-  getEvents(params = {}) {
-    return request(`/admin/events?page=${params.page || 0}&size=${params.size || 10}`)
-  },
-  updateEventStatus(eventId, status) {
-    return request(`/admin/events/${eventId}/status`, { method: 'PUT', body: JSON.stringify({ status }) })
-  },
-  getEventRegistrations(eventId) {
-    return request(`/admin/events/${eventId}/registrations`)
   },
 
   // 群聊管理
@@ -562,15 +495,11 @@ const SSE_RECONNECT_DELAY = 1000      // 初始重连延迟 1 秒
 const SSE_MAX_DELAY = 30000            // 最大重连延迟 30 秒
 const SSE_MAX_ATTEMPTS = 10            // 最大重连次数
 
-export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onNewRegistration, onRegistrationResult, onBroadcast) {
+export function connectSSE(onMessage, onGroupMessage, onBroadcast) {
   // 保存回调函数引用，用于重连
   sseCallbacks = {
     onMessage,
     onGroupMessage,
-    onEventUpdate,
-    onEventStatusChanged,
-    onNewRegistration,
-    onRegistrationResult,
     onBroadcast
   }
 
@@ -619,7 +548,7 @@ export function connectSSE(onMessage, onGroupMessage, onEventUpdate, onEventStat
 function bindSSEListeners() {
   if (!eventSource || !sseCallbacks) return
 
-  const { onMessage, onGroupMessage, onEventUpdate, onEventStatusChanged, onNewRegistration, onRegistrationResult, onBroadcast } = sseCallbacks
+  const { onMessage, onGroupMessage, onBroadcast } = sseCallbacks
 
   eventSource.addEventListener('newMessage', (e) => {
     try {
@@ -634,38 +563,6 @@ function bindSSEListeners() {
       onGroupMessage(JSON.parse(e.data))
     } catch (err) {
       console.error('SSE newGroupMessage parse error:', err)
-    }
-  })
-
-  eventSource.addEventListener('eventUpdate', (e) => {
-    try {
-      onEventUpdate(JSON.parse(e.data))
-    } catch (err) {
-      console.error('SSE eventUpdate parse error:', err)
-    }
-  })
-
-  eventSource.addEventListener('eventStatusChanged', (e) => {
-    try {
-      onEventStatusChanged(JSON.parse(e.data))
-    } catch (err) {
-      console.error('SSE eventStatusChanged parse error:', err)
-    }
-  })
-
-  eventSource.addEventListener('newRegistration', (e) => {
-    try {
-      onNewRegistration(JSON.parse(e.data))
-    } catch (err) {
-      console.error('SSE newRegistration parse error:', err)
-    }
-  })
-
-  eventSource.addEventListener('registrationResult', (e) => {
-    try {
-      onRegistrationResult(JSON.parse(e.data))
-    } catch (err) {
-      console.error('SSE registrationResult parse error:', err)
     }
   })
 
@@ -703,10 +600,6 @@ function scheduleReconnect() {
       connectSSE(
         sseCallbacks.onMessage,
         sseCallbacks.onGroupMessage,
-        sseCallbacks.onEventUpdate,
-        sseCallbacks.onEventStatusChanged,
-        sseCallbacks.onNewRegistration,
-        sseCallbacks.onRegistrationResult,
         sseCallbacks.onBroadcast
       )
     }
