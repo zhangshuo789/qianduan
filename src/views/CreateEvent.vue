@@ -20,7 +20,7 @@
           </div>
           <div class="form-item">
             <label class="form-label">赛事类型 <span class="required">*</span></label>
-            <div class="radio-group">
+            <div class="radio-group" v-if="isAdmin">
               <label class="radio-option" :class="{ active: form.type === 'MATCH' }">
                 <input v-model="form.type" type="radio" value="MATCH" />
                 <span>比赛</span>
@@ -30,6 +30,13 @@
                 <span>活动</span>
               </label>
             </div>
+            <div v-else class="radio-group">
+              <label class="radio-option active">
+                <input type="radio" value="ACTIVITY" checked disabled />
+                <span>活动</span>
+              </label>
+            </div>
+            <p v-if="!isAdmin" class="form-hint">比赛类型仅管理员可创建</p>
           </div>
           <div class="form-item">
             <label class="form-label">赛制 <span class="required">*</span></label>
@@ -127,18 +134,19 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { event as eventApi } from '@/api'
+import { event as eventApi, getUser } from '@/api'
 
 const router = useRouter()
 const submitting = ref(false)
 const error = ref('')
+const isAdmin = computed(() => getUser()?.isAdmin === true)
 
 const form = reactive({
   title: '',
   description: '',
-  type: 'MATCH',
+  type: isAdmin.value ? 'MATCH' : 'ACTIVITY',
   format: 'SINGLE_ELIMINATION',
   bracketSize: 8,
   startTime: '',
