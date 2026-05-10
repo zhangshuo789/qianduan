@@ -39,6 +39,12 @@
           </div>
         </div>
         <div class="kg-header-actions">
+          <button class="kg-action-btn kg-action-primary" @click="openCreateEntity" title="创建实体">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>创建实体</span>
+          </button>
           <button class="kg-action-btn" @click="openPathDialog" title="查找最短路径">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -109,6 +115,11 @@
               </div>
               <div class="kg-detail-actions">
                 <button class="kg-detail-btn" @click="expandFromNode(selectedNode)">从此节点出发</button>
+                <button class="kg-detail-btn" @click="openEditEntity(selectedNode)">编辑</button>
+                <button class="kg-detail-btn kg-detail-btn-danger" @click="openDeleteConfirm(selectedNode)">删除</button>
+              </div>
+              <div class="kg-detail-actions" style="margin-top: 6px;">
+                <button class="kg-detail-btn" @click="openCreateRelation(selectedNode)">添加关系</button>
               </div>
             </div>
           </div>
@@ -150,6 +161,193 @@
         </div>
       </div>
     </div>
+
+    <!-- 创建实体弹窗 -->
+    <div v-if="showCreateEntity" class="modal-overlay" @click.self="showCreateEntity = false">
+      <div class="modal kg-entity-modal">
+        <div class="modal-header">
+          <h3>创建实体</h3>
+          <button class="modal-close" @click="showCreateEntity = false">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>名称 <span class="required">*</span></label>
+              <input v-model="entityForm.name" type="text" placeholder="实体名称" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>类型 <span class="required">*</span></label>
+              <select v-model="entityForm.type" class="form-input" @change="onEntityTypeChange">
+                <option value="" disabled>选择类型</option>
+                <option v-for="t in entityTypes" :key="t.name" :value="t.name">{{ t.label }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>描述</label>
+            <textarea v-model="entityForm.description" placeholder="实体描述（可选）" class="form-input form-textarea" rows="2"></textarea>
+          </div>
+          <template v-if="entityForm.type && entityPropsConfig[entityForm.type]">
+            <div class="form-divider">属性信息</div>
+            <div class="form-row">
+              <div class="form-group" v-for="prop in entityPropsConfig[entityForm.type]" :key="prop.key">
+                <label>{{ prop.label }}</label>
+                <select v-if="prop.options" v-model="entityForm.properties[prop.key]" class="form-input">
+                  <option value="">请选择</option>
+                  <option v-for="opt in prop.options" :key="opt" :value="opt">{{ opt }}</option>
+                </select>
+                <input v-else v-model="entityForm.properties[prop.key]" :type="prop.type || 'text'" :placeholder="prop.placeholder" class="form-input" />
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showCreateEntity = false">取消</button>
+          <button class="btn btn-primary" @click="submitCreateEntity" :disabled="!entityForm.name.trim() || !entityForm.type || entitySaving">
+            {{ entitySaving ? '创建中...' : '创建' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 编辑实体弹窗 -->
+    <div v-if="showEditEntity" class="modal-overlay" @click.self="showEditEntity = false">
+      <div class="modal kg-entity-modal">
+        <div class="modal-header">
+          <h3>编辑实体</h3>
+          <button class="modal-close" @click="showEditEntity = false">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>名称 <span class="required">*</span></label>
+              <input v-model="entityForm.name" type="text" placeholder="实体名称" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>类型</label>
+              <input :value="typeLabel(entityForm.type)" type="text" class="form-input" disabled />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>描述</label>
+            <textarea v-model="entityForm.description" placeholder="实体描述（可选）" class="form-input form-textarea" rows="2"></textarea>
+          </div>
+          <template v-if="entityForm.type && entityPropsConfig[entityForm.type]">
+            <div class="form-divider">属性信息</div>
+            <div class="form-row">
+              <div class="form-group" v-for="prop in entityPropsConfig[entityForm.type]" :key="prop.key">
+                <label>{{ prop.label }}</label>
+                <select v-if="prop.options" v-model="entityForm.properties[prop.key]" class="form-input">
+                  <option value="">请选择</option>
+                  <option v-for="opt in prop.options" :key="opt" :value="opt">{{ opt }}</option>
+                </select>
+                <input v-else v-model="entityForm.properties[prop.key]" :type="prop.type || 'text'" :placeholder="prop.placeholder" class="form-input" />
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showEditEntity = false">取消</button>
+          <button class="btn btn-primary" @click="submitEditEntity" :disabled="!entityForm.name.trim() || entitySaving">
+            {{ entitySaving ? '保存中...' : '保存' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
+      <div class="modal kg-confirm-modal">
+        <div class="modal-header">
+          <h3>确认删除</h3>
+          <button class="modal-close" @click="showDeleteConfirm = false">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>确定要删除实体 <strong>{{ deleteTarget?.name }}</strong> 吗？</p>
+          <p class="kg-warn-text">该操作将同时删除该实体的所有关系，且不可恢复。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showDeleteConfirm = false">取消</button>
+          <button class="btn btn-danger" @click="submitDeleteEntity" :disabled="entitySaving">
+            {{ entitySaving ? '删除中...' : '确认删除' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 创建关系弹窗 -->
+    <div v-if="showCreateRelation" class="modal-overlay" @click.self="showCreateRelation = false">
+      <div class="modal kg-relation-modal">
+        <div class="modal-header">
+          <h3>添加关系</h3>
+          <button class="modal-close" @click="showCreateRelation = false">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>起始节点</label>
+            <input :value="relationForm.fromName" type="text" class="form-input" disabled />
+          </div>
+          <div class="form-group">
+            <label>关系类型 <span class="required">*</span></label>
+            <select v-model="relationForm.relationType" class="form-input">
+              <option value="" disabled>选择关系类型</option>
+              <option v-for="r in relationTypes" :key="r.name" :value="r.name">{{ r.label }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>目标节点 <span class="required">*</span></label>
+            <div class="kg-relation-target">
+              <input
+                v-model="relationTargetSearch"
+                type="text"
+                placeholder="输入名称搜索目标节点..."
+                class="form-input"
+                @input="onRelationTargetSearch"
+              />
+              <div v-if="relationTargetResults.length > 0" class="kg-relation-dropdown">
+                <div
+                  v-for="item in relationTargetResults"
+                  :key="item.id"
+                  class="kg-relation-option"
+                  :class="{ selected: relationForm.toId === item.id }"
+                  @mousedown.prevent="selectRelationTarget(item)"
+                >
+                  <span class="kg-dot" :style="{ background: typeColor(item.type) }"></span>
+                  {{ item.name }}
+                  <span class="kg-relation-option-type">{{ typeLabel(item.type) }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-if="relationForm.toName" class="kg-relation-selected">
+              已选：{{ relationForm.toName }}
+              <button class="kg-clear-btn" @click="clearRelationTarget">清除</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showCreateRelation = false">取消</button>
+          <button class="btn btn-primary" @click="submitCreateRelation" :disabled="!relationForm.toId || !relationForm.relationType || entitySaving">
+            {{ entitySaving ? '创建中...' : '创建关系' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -171,8 +369,24 @@ const pathFrom = ref('')
 const pathTo = ref('')
 const pathLoading = ref(false)
 
+// 增删改状态
+const entityTypes = ref([])
+const relationTypes = ref([])
+const showCreateEntity = ref(false)
+const showEditEntity = ref(false)
+const showDeleteConfirm = ref(false)
+const showCreateRelation = ref(false)
+const entitySaving = ref(false)
+const editingEntityId = ref(null)
+const deleteTarget = ref(null)
+const entityForm = ref({ name: '', type: '', description: '', properties: {} })
+const relationForm = ref({ fromId: '', fromName: '', toId: '', toName: '', relationType: '' })
+const relationTargetSearch = ref('')
+const relationTargetResults = ref([])
+
 let chart = null
 let searchTimer = null
+let relationSearchTimer = null
 
 // 类型配置
 const TYPE_CONFIG = {
@@ -180,6 +394,29 @@ const TYPE_CONFIG = {
   TEAM: { color: '#3498db', symbol: 'roundRect', size: 50, label: '球队' },
   MATCH: { color: '#2ecc71', symbol: 'diamond', size: 35, label: '比赛' },
   TOURNAMENT: { color: '#f39c12', symbol: 'triangle', size: 40, label: '赛事' }
+}
+
+// 各类型的属性配置
+const entityPropsConfig = {
+  PLAYER: [
+    { key: 'position', label: '位置', options: ['主攻', '副攻', '二传', '接应', '自由人'] },
+    { key: 'height', label: '身高', placeholder: '如：198cm' },
+    { key: 'nationality', label: '国籍', placeholder: '如：中国' },
+    { key: 'birthDate', label: '出生日期', type: 'date' }
+  ],
+  TEAM: [
+    { key: 'country', label: '国家', placeholder: '如：中国' },
+    { key: 'teamType', label: '队伍类型', options: ['国家队', '俱乐部'] }
+  ],
+  MATCH: [
+    { key: 'matchDate', label: '比赛日期', type: 'date' },
+    { key: 'location', label: '比赛地点', placeholder: '如：东京' },
+    { key: 'result', label: '比赛结果', placeholder: '如：3-1' }
+  ],
+  TOURNAMENT: [
+    { key: 'year', label: '年份', placeholder: '如：2024' },
+    { key: 'tournamentType', label: '赛事类型', options: ['奥运会', '世锦赛', '世界杯', '联赛'] }
+  ]
 }
 
 function typeColor(type) { return TYPE_CONFIG[type]?.color || '#999' }
@@ -471,8 +708,183 @@ function handleClickOutside(e) {
   }
 }
 
-onMounted(() => {
+// ===== 增删改相关函数 =====
+
+function resetEntityForm() {
+  entityForm.value = { name: '', type: '', description: '', properties: {} }
+  editingEntityId.value = null
+}
+
+function onEntityTypeChange() {
+  entityForm.value.properties = {}
+}
+
+function openCreateEntity() {
+  resetEntityForm()
+  showCreateEntity.value = true
+}
+
+function openEditEntity(node) {
+  editingEntityId.value = node.id
+  const props = {}
+  const schema = entityPropsConfig[node.type] || []
+  for (const p of schema) {
+    props[p.key] = node.properties?.[p.key] || ''
+  }
+  entityForm.value = {
+    name: node.name,
+    type: node.type,
+    description: node.description || '',
+    properties: props
+  }
+  showEditEntity.value = true
+}
+
+async function submitCreateEntity() {
+  if (!entityForm.value.name.trim() || !entityForm.value.type) return
+  entitySaving.value = true
+  try {
+    const data = {
+      name: entityForm.value.name.trim(),
+      type: entityForm.value.type,
+      description: entityForm.value.description.trim() || null,
+      properties: cleanProperties(entityForm.value.properties)
+    }
+    await knowledge.createEntity(data)
+    toastBus.success('实体创建成功')
+    showCreateEntity.value = false
+  } catch (e) {
+    toastBus.error(e.message || '创建失败，请检查是否已登录')
+  } finally {
+    entitySaving.value = false
+  }
+}
+
+async function submitEditEntity() {
+  if (!entityForm.value.name.trim() || !editingEntityId.value) return
+  entitySaving.value = true
+  try {
+    const data = {
+      name: entityForm.value.name.trim(),
+      description: entityForm.value.description.trim() || null,
+      properties: cleanProperties(entityForm.value.properties)
+    }
+    const res = await knowledge.updateEntity(editingEntityId.value, data)
+    const updated = res.data
+    if (selectedNode.value && selectedNode.value.id === editingEntityId.value) {
+      selectedNode.value = { ...selectedNode.value, name: updated.name, description: updated.description, properties: updated.properties }
+    }
+    if (graphData.value) {
+      const idx = graphData.value.nodes.findIndex(n => n.id === editingEntityId.value)
+      if (idx !== -1) Object.assign(graphData.value.nodes[idx], updated)
+      renderChart()
+    }
+    toastBus.success('实体更新成功')
+    showEditEntity.value = false
+  } catch (e) {
+    toastBus.error(e.message || '更新失败')
+  } finally {
+    entitySaving.value = false
+  }
+}
+
+function openDeleteConfirm(node) {
+  deleteTarget.value = node
+  showDeleteConfirm.value = true
+}
+
+async function submitDeleteEntity() {
+  if (!deleteTarget.value) return
+  entitySaving.value = true
+  try {
+    await knowledge.deleteEntity(deleteTarget.value.id)
+    toastBus.success('实体已删除')
+    showDeleteConfirm.value = false
+    if (selectedNode.value?.id === deleteTarget.value.id) selectedNode.value = null
+    if (graphData.value) {
+      graphData.value.nodes = graphData.value.nodes.filter(n => n.id !== deleteTarget.value.id)
+      const eid = deleteTarget.value.elementId
+      graphData.value.edges = graphData.value.edges.filter(e => e.from !== eid && e.to !== eid)
+      renderChart()
+    }
+    deleteTarget.value = null
+  } catch (e) {
+    toastBus.error(e.message || '删除失败')
+  } finally {
+    entitySaving.value = false
+  }
+}
+
+function openCreateRelation(node) {
+  relationForm.value = { fromId: node.id, fromName: node.name, toId: '', toName: '', relationType: '' }
+  relationTargetSearch.value = ''
+  relationTargetResults.value = []
+  showCreateRelation.value = true
+}
+
+function onRelationTargetSearch() {
+  clearTimeout(relationSearchTimer)
+  const kw = relationTargetSearch.value.trim()
+  if (!kw) { relationTargetResults.value = []; return }
+  relationSearchTimer = setTimeout(async () => {
+    try {
+      const res = await knowledge.searchEntities(kw)
+      relationTargetResults.value = (res.data || []).filter(e => e.id !== relationForm.value.fromId).slice(0, 8)
+    } catch (e) {
+      console.error('搜索目标节点失败:', e)
+    }
+  }, 300)
+}
+
+function selectRelationTarget(item) {
+  relationForm.value.toId = item.id
+  relationForm.value.toName = item.name
+  relationTargetSearch.value = ''
+  relationTargetResults.value = []
+}
+
+function clearRelationTarget() {
+  relationForm.value.toId = ''
+  relationForm.value.toName = ''
+}
+
+async function submitCreateRelation() {
+  if (!relationForm.value.toId || !relationForm.value.relationType) return
+  entitySaving.value = true
+  try {
+    await knowledge.createRelation({
+      fromId: relationForm.value.fromId,
+      toId: relationForm.value.toId,
+      relationType: relationForm.value.relationType
+    })
+    toastBus.success('关系创建成功')
+    showCreateRelation.value = false
+    // 刷新当前图谱
+    if (selectedNode.value) await expandFromNode(selectedNode.value)
+  } catch (e) {
+    toastBus.error(e.message || '创建关系失败')
+  } finally {
+    entitySaving.value = false
+  }
+}
+
+function cleanProperties(props) {
+  const result = {}
+  for (const [k, v] of Object.entries(props)) {
+    if (v !== '' && v != null) result[k] = v
+  }
+  return result
+}
+
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+  try {
+    const [typesRes, relRes] = await Promise.all([knowledge.getTypes(), knowledge.getRelationTypes()])
+    entityTypes.value = typesRes.data || []
+    relationTypes.value = relRes.data || []
+  } catch (e) {
+    console.error('加载类型失败:', e)
+  }
 })
 
 onUnmounted(() => {
@@ -990,6 +1402,164 @@ onUnmounted(() => {
   border-color: var(--color-text-muted);
 }
 
+/* 操作按钮 */
+.kg-action-primary {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.kg-action-primary:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* 详情按钮 - 危险 */
+.kg-detail-btn-danger {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.kg-detail-btn-danger:hover {
+  background: var(--color-error);
+  color: white;
+}
+
+/* 实体弹窗 */
+.kg-entity-modal {
+  max-width: 560px;
+}
+
+.kg-relation-modal {
+  max-width: 480px;
+}
+
+.kg-confirm-modal {
+  max-width: 400px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.form-divider {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-top: var(--space-md);
+  margin-bottom: var(--space-md);
+  border-top: 1px dashed var(--color-border-light);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.required {
+  color: var(--color-error);
+}
+
+select.form-input {
+  appearance: auto;
+  cursor: pointer;
+}
+
+/* 关系目标搜索 */
+.kg-relation-target {
+  position: relative;
+}
+
+.kg-relation-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.kg-relation-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-md);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.kg-relation-option:hover {
+  background: var(--color-bg-soft);
+}
+
+.kg-relation-option.selected {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.kg-relation-option-type {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.kg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.kg-relation-selected {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  margin-top: var(--space-2);
+}
+
+.kg-clear-btn {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.kg-warn-text {
+  font-size: var(--text-sm);
+  color: var(--color-error);
+  margin-top: var(--space-2);
+}
+
+.btn-danger {
+  background: var(--color-error);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c0392b;
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* 响应式 */
 @media (max-width: 960px) {
   .kg-sidebar {
@@ -1016,6 +1586,10 @@ onUnmounted(() => {
 
   .kg-header-actions .kg-action-btn span {
     display: none;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
   }
 }
 </style>
