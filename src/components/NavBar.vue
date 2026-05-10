@@ -48,15 +48,6 @@
       </nav>
 
       <div class="nav-actions">
-        <div class="nav-search">
-          <svg class="nav-search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="M21 21l-4.35-4.35"/>
-          </svg>
-          <input v-model="keyword" type="text" class="nav-search-input" placeholder="搜索帖子..." @keydown.enter="handleSearch" />
-          <button class="nav-search-button" @click="handleSearch">搜索</button>
-        </div>
-
         <router-link v-if="user" to="/create-post" class="ui-button ui-button-primary nav-create-btn">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
@@ -144,7 +135,6 @@ const router = useRouter()
 const userRef = useUser()
 const user = computed(() => userRef.value)
 const isAdmin = computed(() => user.value?.isAdmin === true)
-const keyword = ref('')
 const menuVisible = ref(false)
 const defaultAvatar = DEFAULT_AVATAR
 const displayAvatar = ref(DEFAULT_AVATAR)
@@ -179,12 +169,6 @@ watch(user, (newUser) => {
 
 function toggleMenu() {
   menuVisible.value = !menuVisible.value
-}
-
-function handleSearch() {
-  if (keyword.value.trim()) {
-    alert('搜索功能正在开发中')
-  }
 }
 
 function logout() {
@@ -304,67 +288,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-.nav-search {
-  display: flex;
-  align-items: center;
-  position: relative;
-  background: var(--color-bg-soft);
-  border: 1px solid transparent;
-  border-radius: var(--radius-lg);
-  height: 44px;
-  transition: all var(--transition-fast);
-}
-
-.nav-search:focus-within {
-  background: white;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus);
-}
-
-.nav-search-icon {
-  position: absolute;
-  left: var(--space-3);
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.nav-search-input {
-  width: 200px;
-  height: 100%;
-  border: none;
-  background: transparent;
-  padding: 0 var(--space-10) 0 var(--space-10);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-}
-
-.nav-search-input:focus {
-  outline: none;
-}
-
-.nav-search-input::placeholder {
-  color: var(--color-text-muted);
-}
-
-.nav-search-button {
-  position: absolute;
-  right: var(--space-1);
-  height: 32px;
-  padding: 0 var(--space-3);
-  background: var(--color-primary-gradient);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.nav-search-button:hover {
-  box-shadow: var(--shadow-primary);
 }
 
 .nav-create-btn {
@@ -546,10 +469,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 960px) {
-  .nav-search {
-    display: none;
-  }
-
   .nav-links {
     display: none;
   }
