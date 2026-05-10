@@ -20,10 +20,7 @@
       </div>
 
       <div v-for="(group, gi) in filteredGroups" :key="gi" class="faq-group">
-        <h2 class="group-title">
-          <span class="group-icon" :class="'gi-' + gi">{{ group.icon }}</span>
-          {{ group.title }}
-        </h2>
+        <h2 class="group-title">{{ group.title }}</h2>
         <div class="faq-list">
           <div
             v-for="(item, ii) in group.items"
@@ -76,7 +73,6 @@ const keyword = ref('')
 const faqGroups = ref([
   {
     title: '账号相关',
-    icon: '👤',
     items: [
       {
         q: '如何注册账号？',
@@ -97,7 +93,6 @@ const faqGroups = ref([
   },
   {
     title: '帖子与互动',
-    icon: '💬',
     items: [
       {
         q: '如何发布帖子？',
@@ -118,7 +113,6 @@ const faqGroups = ref([
   },
   {
     title: '赛事系统',
-    icon: '🏆',
     items: [
       {
         q: '如何参加赛事？',
@@ -139,7 +133,6 @@ const faqGroups = ref([
   },
   {
     title: '群聊与私信',
-    icon: '👥',
     items: [
       {
         q: '如何创建群聊？',
@@ -155,7 +148,6 @@ const faqGroups = ref([
   },
   {
     title: '反馈与建议',
-    icon: '📝',
     items: [
       {
         q: '如何提交问题反馈？',
@@ -269,19 +261,12 @@ const filteredGroups = computed(() => {
 }
 
 .group-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   margin: 0;
   padding: var(--space-lg) var(--space-xl);
   font-size: var(--text-base);
   font-weight: 700;
   color: var(--color-text);
   border-bottom: 1px solid var(--color-border-light);
-}
-
-.group-icon {
-  font-size: var(--text-lg);
 }
 
 /* FAQ 条目 */
