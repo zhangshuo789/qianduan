@@ -114,12 +114,10 @@
                 </div>
               </div>
               <div class="kg-detail-actions">
-                <button class="kg-detail-btn kg-detail-btn-wide" @click="expandFromNode(selectedNode)">从此节点出发</button>
-              </div>
-              <div class="kg-detail-actions" style="margin-top: 6px;">
+                <button class="kg-detail-btn" @click="expandFromNode(selectedNode)">从此节点出发</button>
                 <button class="kg-detail-btn" @click="openEditEntity(selectedNode)">编辑</button>
-                <button class="kg-detail-btn kg-detail-btn-danger" @click="openDeleteConfirm(selectedNode)">删除</button>
                 <button class="kg-detail-btn" @click="openCreateRelation(selectedNode)">添加关系</button>
+                <button class="kg-detail-btn kg-detail-btn-danger" @click="openDeleteConfirm(selectedNode)">删除</button>
               </div>
             </div>
           </div>
@@ -1235,14 +1233,12 @@ onUnmounted(() => {
 }
 
 .kg-detail-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
 }
 
 .kg-detail-btn {
-  flex: 1;
-  min-width: 0;
   padding: var(--space-2) var(--space-md);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-primary);
@@ -1257,10 +1253,6 @@ onUnmounted(() => {
 .kg-detail-btn:hover {
   background: var(--color-primary);
   color: white;
-}
-
-.kg-detail-btn-wide {
-  width: 100%;
 }
 
 .kg-stats {
