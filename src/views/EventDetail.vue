@@ -359,9 +359,10 @@ async function loadBracket() {
   bracketLoading.value = true
   try {
     const res = await eventApi.getBracket(route.params.id)
-    bracket.value = res.data
+    bracket.value = res.data || { rounds: [] }
   } catch (e) {
     console.error('加载对阵图失败:', e)
+    bracket.value = { rounds: [] }
   } finally {
     bracketLoading.value = false
   }
