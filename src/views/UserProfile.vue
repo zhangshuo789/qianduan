@@ -115,7 +115,7 @@
                       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
                       </svg>
-                      {{ p.board?.name || '未分类' }}
+                      {{ p.boardName || p.board?.name || '未分类' }}
                     </span>
                     <span class="meta-dot"></span>
                     <span class="meta-time">{{ formatDate(p.createdAt) }}</span>
@@ -265,44 +265,6 @@
             </div>
           </template>
 
-          <template v-else-if="activeTab === 'feed'">
-            <div v-if="feedLoading" class="loading-state">
-              <div class="spinner spinner-lg"></div>
-              <span>加载中...</span>
-            </div>
-            <div v-else-if="feedList.length === 0" class="empty-state">
-              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M4 11a9 9 0 0 1 9 9"/>
-                <path d="M4 4a16 16 0 0 1 16 16"/>
-                <circle cx="5" cy="19" r="1"/>
-              </svg>
-              <p>暂无动态</p>
-            </div>
-            <div v-else class="post-list">
-              <router-link v-for="(f, index) in feedList" :key="f.postId" :to="`/post/${f.postId || f.id}`" class="post-card animate-fade-in-up" :style="{ animationDelay: `${index * 50}ms` }">
-                <div class="post-content">
-                  <h3 class="post-title">{{ f.title }}</h3>
-                  <div class="post-meta">
-                    <span class="meta-author">
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                      </svg>
-                      {{ f.user?.nickname || '' }}
-                    </span>
-                    <span class="meta-dot"></span>
-                    <span class="meta-time">{{ formatDate(f.createdAt) }}</span>
-                  </div>
-                </div>
-                <div class="post-arrow">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
-                </div>
-              </router-link>
-            </div>
-          </template>
-
           <template v-else-if="activeTab === 'favorites'">
             <div v-if="favoritesLoading" class="loading-state">
               <div class="spinner spinner-lg"></div>
@@ -323,7 +285,7 @@
                       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
                       </svg>
-                      {{ p.board?.name || '未分类' }}
+                      {{ p.boardName || p.board?.name || '未分类' }}
                     </span>
                     <span class="meta-dot"></span>
                     <span class="meta-time">{{ formatDate(p.createdAt) }}</span>
@@ -479,9 +441,6 @@ const friendsList = ref([])
 const friendsLoading = ref(false)
 const friendsPage = ref(0)
 const totalFriendsPages = ref(0)
-const feedList = ref([])
-const feedLoading = ref(false)
-
 const isSelf = computed(() => user && user.id == route.params.id)
 
 const IconPosts = {
@@ -534,30 +493,19 @@ const IconFriends = {
   }
 }
 
-const IconFeed = {
-  render() {
-    return h('svg', { viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-      h('path', { d: 'M4 11a9 9 0 0 1 9 9' }),
-      h('path', { d: 'M4 4a16 16 0 0 1 16 16' }),
-      h('circle', { cx: 5, cy: 19, r: 1 })
-    ])
-  }
-}
-
 const tabs = [
   { key: 'posts', label: '帖子', icon: IconPosts },
   { key: 'favorites', label: '收藏', icon: IconFavorites },
   { key: 'following', label: '关注', icon: IconFollowing },
   { key: 'followers', label: '粉丝', icon: IconFollowers },
-  { key: 'friends', label: '互关', icon: IconFriends },
-  { key: 'feed', label: '动态', icon: IconFeed }
+  { key: 'friends', label: '互关', icon: IconFriends }
 ]
 
 const visibleTabs = computed(() => {
   if (isSelf.value) {
     return tabs
   }
-  return tabs.filter(t => t.key !== 'favorites' && t.key !== 'feed')
+  return tabs.filter(t => t.key !== 'favorites')
 })
 
 function formatDate(d) {
@@ -718,18 +666,6 @@ async function loadFriends(p = 0) {
   }
 }
 
-async function loadFeed() {
-  feedLoading.value = true
-  try {
-    const res = await userApi.getFeed(route.params.id)
-    feedList.value = res.data.content || []
-  } catch (e) {
-    console.error(e)
-  } finally {
-    feedLoading.value = false
-  }
-}
-
 watch(activeTab, (tab) => {
   if (tab === 'posts' && posts.value.length === 0) {
     loadPosts()
@@ -741,8 +677,6 @@ watch(activeTab, (tab) => {
     loadFollowers()
   } else if (tab === 'friends' && friendsList.value.length === 0) {
     loadFriends()
-  } else if (tab === 'feed' && feedList.value.length === 0) {
-    loadFeed()
   }
 })
 
@@ -764,9 +698,6 @@ watch(
     } else if (tab === 'friends') {
       activeTab.value = 'friends'
       loadFriends()
-    } else if (tab === 'feed') {
-      activeTab.value = 'feed'
-      loadFeed()
     } else {
       activeTab.value = 'posts'
       loadPosts()
@@ -783,7 +714,6 @@ watch(
     followingList.value = []
     followersList.value = []
     friendsList.value = []
-    feedList.value = []
     stats.value = null
     isFollowing.value = false
     loadUserInfo()

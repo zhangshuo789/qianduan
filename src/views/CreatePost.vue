@@ -23,11 +23,6 @@
             <textarea v-model="form.content" class="form-input" placeholder="请输入内容，支持 Markdown 格式" rows="16" required></textarea>
           </div>
           <div v-if="error" class="error-message">{{ error }}</div>
-          <div class="form-group">
-            <div class="file-upload-area">
-              <p>点击或拖拽文件到此处上传</p>
-            </div>
-          </div>
           <div class="form-actions">
             <button type="button" class="btn-cancel" @click="router.push('/')">取消</button>
             <button type="submit" class="btn-submit" :disabled="loading">
@@ -175,25 +170,6 @@ async function handleSubmit() {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
-}
-
-.file-upload-area {
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-xl);
-  text-align: center;
-  cursor: pointer;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
-}
-
-.file-upload-area:hover {
-  border-color: var(--color-primary);
-  background: rgba(255, 107, 53, 0.05);
-}
-
-.file-upload-area p {
-  color: var(--color-text-secondary);
-  font-size: var(--text-sm);
 }
 
 .form-actions {
